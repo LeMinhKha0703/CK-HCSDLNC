@@ -17,17 +17,20 @@ const mockSubmissions = [
   { stt: '04', name: 'Diana Evans', status: 'Not Submitted', score: '_ / 10', action: '-', statusColor: 'bg-gray-100 text-gray-500' },
 ];
 
-const scoreData = [
-  { score: 1, questions: 1 },
-  { score: 2, questions: 2 },
-  { score: 3, questions: 3 },
-  { score: 4, questions: 4 },
-  { score: 5, questions: 6 },
-  { score: 6, questions: 8 },
-  { score: 7, questions: 7 },
-  { score: 8, questions: 5 },
-  { score: 9, questions: 3 },
-  { score: 10, questions: 1 },
+const questionCount = 10;
+const maxScorePerQuestion = 10 / questionCount;
+
+const averageScoreData = [
+  { question: 1, averageScore: 0.05 },
+  { question: 2, averageScore: 0.1 },
+  { question: 3, averageScore: 0.2 },
+  { question: 4, averageScore: 0.15 },
+  { question: 5, averageScore: 0.3 },
+  { question: 6, averageScore: 0.25 },
+  { question: 7, averageScore: 0.4 },
+  { question: 8, averageScore: 0.35 },
+  { question: 9, averageScore: 0.5 },
+  { question: 10, averageScore: 0.45 },
 ];
 
 const EssayDetails: React.FC<EssayDetailsProps> = ({ onBack, assignmentTitle }) => {
@@ -91,8 +94,8 @@ const EssayDetails: React.FC<EssayDetailsProps> = ({ onBack, assignmentTitle }) 
           <div className="md:col-span-2 bg-[#f3f4f6] rounded-xl p-8 relative shadow-sm">
             <div className="flex justify-between items-start mb-6">
               <div>
-                <h2 className="text-lg font-bold text-gray-900">Score Distribution</h2>
-                <p className="text-sm text-gray-500 mt-1">Questions per score value</p>
+                <h2 className="text-lg font-bold text-gray-900">Average Score per Question</h2>
+                <p className="text-sm text-gray-500 mt-1">Average score normalized from 0 to {maxScorePerQuestion}</p>
               </div>
               {/* <button className="text-gray-500 hover:text-gray-800">
                 <MoreHorizontal className="w-5 h-5" />
@@ -101,12 +104,11 @@ const EssayDetails: React.FC<EssayDetailsProps> = ({ onBack, assignmentTitle }) 
 
             <div className="w-full h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={scoreData} margin={{ top: 20, right: 12, left: 0, bottom: 12 }}>
+                <BarChart data={averageScoreData} margin={{ top: 20, right: 12, left: 0, bottom: 12 }}>
                   <CartesianGrid stroke="#e5e7eb" vertical={false} strokeDasharray="3 3" />
-                  <XAxis dataKey="score" axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} label={{ value: 'Score', position: 'bottom', offset: 0, fill: '#6b7280', fontSize: 12 }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} width={35} label={{ value: 'Questions', angle: -90, position: 'insideLeft', fill: '#6b7280', fontSize: 12 }}/>
-                  <Tooltip cursor={{ fill: 'rgba(59,130,246,0.08)' }} contentStyle={{ borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 10px 30px rgba(15,23,42,0.08)' }} />
-                  <Bar dataKey="questions" fill="#1a4cd2" radius={[8, 8, 0, 0]} barSize={20} />
+                  <XAxis dataKey="question" axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} label={{ value: 'Number of questions', position: 'bottom', offset: 0, fill: '#6b7280', fontSize: 12 }} />
+                  <YAxis type="number" domain={[0, maxScorePerQuestion]} ticks={[0, maxScorePerQuestion]} axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} width={35} label={{ value: 'Average score', angle: -90, position: 'insideLeft', fill: '#6b7280', fontSize: 12 }}/>
+                  <Bar dataKey="averageScore" fill="#1a4cd2" radius={[8, 8, 0, 0]} barSize={20} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -176,55 +178,3 @@ const EssayDetails: React.FC<EssayDetailsProps> = ({ onBack, assignmentTitle }) 
 };
 
 export default EssayDetails;
-
-
-
-
-
-
-
-
-
-
-        // {/* Stats Grid */}
-        // <div className="grid grid-cols-1 md:col-span-3 gap-6 mb-8">
-          
-        //   {/* Score Distribution */}
-        //   <div className="md:col-span-2 bg-[#f3f4f6] rounded-xl p-8 relative shadow-sm">
-        //     <div className="flex justify-between items-start mb-6">
-        //       <div>
-        //         <h2 className="text-lg font-bold text-gray-900">Score Distribution</h2>
-        //         <p className="text-sm text-gray-500 mt-1">Questions per score value</p>
-        //       </div>
-        //       {/* <button className="text-gray-500 hover:text-gray-800">
-        //         <MoreHorizontal className="w-5 h-5" />
-        //       </button> */}
-        //     </div>
-
-        //     <div className="w-full h-[300px]">
-        //       <ResponsiveContainer width="100%" height="100%">
-        //         <BarChart data={scoreData} margin={{ top: 20, right: 12, left: 0, bottom: 12 }}>
-        //           <CartesianGrid stroke="#e5e7eb" vertical={false} strokeDasharray="3 3" />
-        //           <XAxis dataKey="questions" axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} label={{ value: 'Number of questions', position: 'bottom', offset: 0, fill: '#6b7280', fontSize: 12 }} />
-        //           <YAxis type="number" domain={[0, 10]} ticks={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]} axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} width={35} label={{ value: 'Scores', angle: -90, position: 'insideLeft', fill: '#6b7280', fontSize: 12 }}/>
-        //           <Tooltip 
-        //             cursor={{ fill: 'rgba(59,130,246,0.08)' }} 
-        //             content={({ active, payload }: any) => {
-        //               if (active && payload && payload.length) {
-        //                 const data = payload[0].payload;
-        //                 return (
-        //                   <div className="bg-white p-3 border border-gray-200 rounded-xl shadow-lg">
-        //                     <p className="font-bold text-gray-900 mb-0.5">Score: {data.score}</p>
-        //                     <p className="text-sm text-gray-500 m-0">Questions: {data.questions}</p>
-        //                   </div>
-        //                 );
-        //               }
-        //               return null;
-        //             }}
-        //           />
-        //           <Bar dataKey="score" fill="#1a4cd2" radius={[8, 8, 0, 0]} barSize={20} />
-        //         </BarChart>
-        //       </ResponsiveContainer>
-        //     </div>
-        //   </div>
-        // </div>

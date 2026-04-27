@@ -16,21 +16,22 @@ const mockSubmissions = [
   { stt: '04', initials: 'EE', name: 'Eva Evans', bg: 'bg-[#cdd8ff]', score: '9/10', scoreColor: 'text-gray-900', status: 'Graded', statusColor: 'bg-gray-200 text-gray-700' },
 ];
 
-const scoreData = [
-  { score: 1, questions: 1 },
-  { score: 2, questions: 2 },
-  { score: 3, questions: 3 },
-  { score: 4, questions: 4 },
-  { score: 5, questions: 6 },
-  { score: 6, questions: 8 },
-  { score: 7, questions: 7 },
-  { score: 8, questions: 5 },
-  { score: 9, questions: 3 },
-  { score: 10, questions: 1 },
+const questionData = [
+  { question: 1, students: 3 },
+  { question: 2, students: 4 },
+  { question: 3, students: 2 },
+  { question: 4, students: 5 },
+  { question: 5, students: 1 },
+  { question: 6, students: 3 },
+  { question: 7, students: 4 },
+  { question: 8, students: 2 },
+  { question: 9, students: 5 },
+  { question: 10, students: 3 },
 ];
 
 const MCQDetails: React.FC<MCQDetailsProps> = ({ onBack, assignmentTitle }) => {
   const [reviewingStudent, setReviewingStudent] = useState<string | null>(null);
+  const totalStudents = mockSubmissions.length;
 
   const exportSubmissionsToExcel = () => {
     const worksheetData = mockSubmissions.map((submission) => ({
@@ -88,8 +89,8 @@ const MCQDetails: React.FC<MCQDetailsProps> = ({ onBack, assignmentTitle }) => {
           <div className="md:col-span-2 bg-[#f3f4f6] rounded-xl p-8 relative shadow-sm">
             <div className="flex justify-between items-start mb-6">
               <div>
-                <h2 className="text-lg font-bold text-gray-900">Score Distribution</h2>
-                <p className="text-sm text-gray-500 mt-1">Questions per score value</p>
+                <h2 className="text-lg font-bold text-gray-900">Question Performance</h2>
+                <p className="text-sm text-gray-500 mt-1">Students who answered each question correctly</p>
               </div>
               {/* <button className="text-gray-500 hover:text-gray-800">
                 <MoreHorizontal className="w-5 h-5" />
@@ -98,12 +99,12 @@ const MCQDetails: React.FC<MCQDetailsProps> = ({ onBack, assignmentTitle }) => {
 
             <div className="w-full h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={scoreData} margin={{ top: 20, right: 12, left: 0, bottom: 12 }}>
+                <BarChart data={questionData} margin={{ top: 20, right: 12, left: 0, bottom: 12 }}>
                   <CartesianGrid stroke="#e5e7eb" vertical={false} strokeDasharray="3 3" />
-                  <XAxis dataKey="score" axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} label={{ value: 'Score', position: 'bottom', offset: 0, fill: '#6b7280', fontSize: 12 }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} width={35} label={{ value: 'Questions', angle: -90, position: 'insideLeft', fill: '#6b7280', fontSize: 12 }}/>
+                  <XAxis dataKey="question" axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} label={{ value: 'Question', position: 'bottom', offset: 0, fill: '#6b7280', fontSize: 12 }} />
+                  <YAxis domain={[0, totalStudents]} allowDecimals={false} axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} width={35} label={{ value: 'Students', angle: -90, position: 'insideLeft', fill: '#6b7280', fontSize: 12 }}/>
                   <Tooltip cursor={{ fill: 'rgba(59,130,246,0.08)' }} contentStyle={{ borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 10px 30px rgba(15,23,42,0.08)' }} />
-                  <Bar dataKey="questions" fill="#1a4cd2" radius={[8, 8, 0, 0]} barSize={20} />
+                  <Bar dataKey="students" fill="#1a4cd2" radius={[8, 8, 0, 0]} barSize={20} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
