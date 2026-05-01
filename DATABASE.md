@@ -5,19 +5,19 @@ Với SQL Server, chiến lược là **Chuẩn hóa dữ liệu (Normalization)
 ## Thiết kế Bảng (Tables)
 
 * **Users:** Lưu thông tin tài khoản dùng chung.
-  * `UserID` (PK), `Fullname`, `Email` (Unique, Indexed), `PasswordHash`, `Role` (Student, Teacher, Admin).
+  * `UserID` (PK), `FullName`, `Email` (Unique, Indexed), `PasswordHash`, `Role` (Student, Teacher, Admin).
 * **Groups:** Nhóm học.
   * `GroupID` (PK), `TeacherID` (FK -> Users), `GroupName`, `TotalStudent`, `CreatedAt`.
 * **Group_Students:** Bảng trung gian (Many-to-Many).
   * `GroupID` (FK), `StudentID` (FK), `JoinedDate`. (Composite PK: GroupID, StudentID).
 * **Notifications:** Lưu lời mời vào nhóm.
-  * `NotifID` (PK), `UserID` (FK), `Content`, `IsRead`, `Type` (Invite_Group, etc.), `SendDate`.
+  * `NotifID` (PK), `UserID` (FK), `Title`, `Content`, `Type` (Invite_Group, normal), `SendDate`.
 * **Exams:** Thông tin bài kiểm tra.
-  * `ExamID` (PK), `GroupID` (FK), `Title`, `Type` (Trắc nghiệm, Tự luận), `CreatedAt`, `EndAt`.
+  * `ExamID` (PK), `GroupID` (FK), `Title`, `Type` (Essay, MCQ), `TotalQuestions`, `CreatedAt`, `EndAt`.
 * **Questions:** Chi tiết từng câu hỏi (phục vụ tính toán tỷ lệ thất bại).
   * `QuestionID` (PK), `ExamID` (FK), `Content`, `CorrectAnswer`.
 * **Submissions:** Lưu kết quả làm bài.
-  * `SubmissionID` (PK), `ExamID` (FK), `StudentID` (FK), `TotalScore`, `Status` (Pending, Graded).
+  * `SubmissionID` (PK), `ExamID` (FK), `StudentID` (FK), `TotalScore`, `Status` (Pending, Graded, Locked), `SubmitedAt`.
 * **Submission_Details:** Lưu câu trả lời chi tiết của sinh viên.
   * `DetailID` (PK), `SubmissionID` (FK), `QuestionID` (FK), `StudentAnswer`, `IsCorrect` (Bit: 1 đúng, 0 sai).
 * **Materials:** Tài liệu bổ trợ.
