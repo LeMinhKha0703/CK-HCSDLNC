@@ -26,7 +26,7 @@ Tài liệu này quy định các chức năng cốt lõi cho hệ thống quả
     * Đăng tải bài kiểm tra lên hệ thống cho các nhóm học tương ứng.
 * **Chấm điểm tự luận:** Truy cập vào danh sách bài làm tự luận của sinh viên, nhập điểm và lưu vào hệ thống.
 * **Phân tích và Giám sát:**
-    * **Xác định sinh viên có nguy cơ:** Truy cập bảng điểm trung bình toàn nhóm, hệ thống tự động lọc Top 10 sinh viên có điểm thấp nhất (hiển thị dòng màu đỏ trên UI).
+    * **Xác định sinh viên có nguy cơ:** Truy cập bảng điểm trung bình toàn nhóm, hệ thống tự động lọc Top sinh viên có điểm thấp nhất (hiển thị dòng màu đỏ trên UI).
     * **Phân tích độ khó:** Xem báo cáo về tỷ lệ thất bại (tỷ lệ trả lời sai) của từng câu hỏi cụ thể trong bài kiểm tra.
     * **Xuất báo cáo:** Hỗ trợ xuất các danh sách điểm và báo cáo phân tích ra tệp Excel.
 * **Hỗ trợ giảng dạy:** Đăng tải tài liệu bổ trợ lên hệ thống dựa trên kết quả phân tích học tập của sinh viên.
