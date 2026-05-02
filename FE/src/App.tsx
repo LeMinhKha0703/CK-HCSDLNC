@@ -41,26 +41,7 @@ const TeacherLayout = ({ children }: { children: React.ReactNode }) => (
   </div>
 );
 
-// Admin wrapper — quản lý state users nội bộ (sẽ thay bằng API ở Bước 4)
-const AdminPage = () => {
-  const [users, setUsers] = React.useState<{ id: string; name: string; email: string; role: string; initial: string; color: string }[]>([]);
-  return <Admin users={users} setUsers={setUsers} />;
-};
-const CreateUserPage = () => {
-  const [users, setUsers] = React.useState<{ id: string; name: string; email: string; role: string; initial: string; color: string }[]>([]);
-  return <CreateUser users={users} setUsers={setUsers} />;
-};
-
-
-// Layout bọc Sidebar cho Admin
-const AdminLayout = ({ children }: { children: React.ReactNode }) => (
-  <div className="flex h-screen bg-[#f9f9fb] font-sans antialiased overflow-hidden">
-    <Sidebar type="admin" />
-    <div className="flex-1 overflow-y-auto">
-      {children}
-    </div>
-  </div>
-);
+// Admin tự quản lý state và sidebar riêng — không cần wrapper
 
 // Smart redirect sau khi đăng nhập dựa theo role
 const RoleRedirect = () => {
@@ -177,12 +158,12 @@ function App() {
       {/* === ADMIN Routes === */}
       <Route path="/admin/usermanagement" element={
         <ProtectedRoute allowedRoles={['Admin']}>
-          <AdminPage />
+          <Admin />
         </ProtectedRoute>
       } />
       <Route path="/admin/create" element={
         <ProtectedRoute allowedRoles={['Admin']}>
-          <CreateUserPage />
+          <CreateUser />
         </ProtectedRoute>
       } />
 

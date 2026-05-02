@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import * as XLSX from 'xlsx';
-import { Calendar, DownloadCloud, MoreHorizontal, Search, ArrowLeft, TrendingUp } from 'lucide-react';
+import { Calendar, DownloadCloud, ArrowLeft, TrendingUp } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import GradeEssay from './GradeEssay';
-import EssayStudentResult from './EssayStudentResult';
+import { useNavigate, useParams } from 'react-router-dom';
 
 interface EssayDetailsProps {
   onBack?: () => void;
@@ -34,8 +33,20 @@ const averageScoreData = [
 ];
 
 const EssayDetails: React.FC<EssayDetailsProps> = ({ onBack, assignmentTitle }) => {
+  const navigate = useNavigate();
+  const { examId } = useParams();
   const [gradingStudent, setGradingStudent] = useState<string | null>(null);
-  const [reviewStudent, setReviewStudent ] = useState<string | null>(null);
+  const [reviewStudent, setReviewStudent] = useState<string | null>(null);
+
+  const handleGrade = (subId: string) => {
+    if (examId) navigate(`/teacher/exams/essay/${examId}/grade/${subId}`);
+    else setGradingStudent(subId);
+  };
+
+  const handleReview = (subId: string) => {
+    if (examId) navigate(`/teacher/exams/essay/${examId}/review/${subId}`);
+    else setReviewStudent(subId);
+  };
 
   const exportSubmissionsToExcel = () => {
     const worksheetData = mockSubmissions.map((submission) => ({
@@ -45,7 +56,6 @@ const EssayDetails: React.FC<EssayDetailsProps> = ({ onBack, assignmentTitle }) 
       Score: submission.score,
       Action: submission.action,
     }));
-
     const worksheet = XLSX.utils.json_to_sheet(worksheetData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Submissions');
@@ -62,7 +72,7 @@ const EssayDetails: React.FC<EssayDetailsProps> = ({ onBack, assignmentTitle }) 
 
   return (
       <div className="max-w-6xl mx-auto pt-6">
-        <button onClick={onBack} className="text-gray-500 hover:text-[#1a38cf] flex items-center mb-6 text-sm font-medium transition-colors">
+        <button onClick={onBack || (() => navigate(-1))} className="text-gray-500 hover:text-[#1a38cf] flex items-center mb-6 text-sm font-medium transition-colors">
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back
         </button>
@@ -152,13 +162,13 @@ const EssayDetails: React.FC<EssayDetailsProps> = ({ onBack, assignmentTitle }) 
                     <td className="py-5 px-8 text-right">
                       {sub.status === 'Graded' ? (
                         <button 
-                          onClick={() => setReviewStudent(sub.name)}
+                          onClick={() => handleReview(sub.stt)}
                           className="text-[#1a38cf] font-semibold text-sm hover:underline">
                           Review
                         </button>
                       ) : sub.status === 'Submitted' ? (
                         <button 
-                          onClick={() => setGradingStudent(sub.name)}
+                          onClick={() => handleGrade(sub.stt)}
                           className="bg-[#b6c6ff] hover:bg-[#a3b7ff] text-[#1a38cf] px-6 py-1.5 rounded-md font-semibold text-sm transition-colors"
                         >
                           Grade

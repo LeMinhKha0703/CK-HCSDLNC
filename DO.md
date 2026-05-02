@@ -41,16 +41,16 @@ Tài liệu này liệt kê các công việc cần thực hiện để biến c
 ## 3. Liên kết Frontend (FE Phase - React)
 *(Đảm nhận hiển thị dữ liệu và biểu đồ phân tích)*
 
-- [ ] **Cấu hình API Client:**
-  - [ ] Trong folder `FE`, thiết lập `axios` instance với `baseURL` trỏ về Python BE.
-  - [ ] Cài đặt Interceptors để tự động đính kèm JWT Token vào Header của mọi request.
-- [ ] **Đồng bộ Giao diện với API:**
-  - [ ] **Login/Register:** Ghép API Auth, xử lý lưu token (LocalStorage/Cookies), phân hướng màn hình dựa theo Role sau khi đăng nhập.
-  - [ ] **Thiết kế Form phức tạp:** Form tạo bài kiểm tra (Teacher) có tính năng thêm danh sách câu hỏi động (Dynamic form) để gửi JSON data về BE.
-  - [ ] **Luồng làm bài (Student):** Hiển thị câu hỏi (Trắc nghiệm/Tự luận) lấy từ Mongo, thu thập đáp án từ UI và push JSON về API Submit.
-- [ ] **Vẽ Biểu đồ Phân tích (Analytics Charts):**
-  - [ ] Cài đặt thư viện biểu đồ (như `Chart.js` hoặc `Recharts`).
-  - [ ] Teacher xem báo cáo: Fetch data đã được tính toán sẵn từ API (nhờ Aggregation Pipeline của Mongo và Indexed View của SQL) để vẽ đồ thị: Điểm trung bình từng câu (Essay) và Tỷ lệ chọn đáp án đúng (MCQ).
+- [x] **Cấu hình API Client:**
+  - [x] Trong folder `FE`, thiết lập `axios` instance với `baseURL` trỏ về Python BE.
+  - [x] Cài đặt Interceptors để tự động đính kèm JWT Token vào Header của mọi request.
+- [x] **Đồng bộ Giao diện với API:**
+  - [x] **Login/Register:** Ghép API Auth, xử lý lưu token (LocalStorage/Cookies), phân hướng màn hình dựa theo Role sau khi đăng nhập.
+  - [x] **Thiết kế Form phức tạp:** Form tạo bài kiểm tra (Teacher) có tính năng thêm danh sách câu hỏi động (Dynamic form) để gửi JSON data về BE.
+  - [x] **Luồng làm bài (Student):** Hiển thị câu hỏi (Trắc nghiệm/Tự luận) lấy từ Mongo, thu thập đáp án từ UI và push JSON về API Submit.
+- [x] **Vẽ Biểu đồ Phân tích (Analytics Charts):**
+  - [x] Cài đặt thư viện biểu đồ (như `Chart.js` hoặc `Recharts`).
+  - [x] Teacher xem báo cáo: Fetch data đã được tính toán sẵn từ API (nhờ Aggregation Pipeline của Mongo và Indexed View của SQL) để vẽ đồ thị: Điểm trung bình từng câu (Essay) và Tỷ lệ chọn đáp án đúng (MCQ).
 
 ## 4. Kiểm thử & Đánh giá Demo
 - [ ] Tạo dữ liệu Mock (khoảng hàng ngàn submission) để test tốc độ query giữa việc dùng Aggregation của MongoDB so với việc dùng JOIN truyền thống của SQL Server, từ đó chứng minh được lý do áp dụng kiến trúc Polyglot Persistence trong môn Hệ CSDL Nâng cao.

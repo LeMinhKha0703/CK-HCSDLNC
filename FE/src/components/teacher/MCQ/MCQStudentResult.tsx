@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ArrowLeft, XCircle, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface MCQStudentResultProps {
   onBack?: () => void;
@@ -34,6 +35,7 @@ const mockQuestions = Array.from({ length: 50 }, (_, i) => ({
 }));
 
 const MCQStudentResult: React.FC<MCQStudentResultProps> = ({ onBack, studentName }) => {
+  const navigate = useNavigate();
   const [currentQuestionId, setCurrentQuestionId] = useState(1);
   const currentQuestion = mockQuestions.find(q => q.id === currentQuestionId) || mockQuestions[0];
 
@@ -42,7 +44,7 @@ const MCQStudentResult: React.FC<MCQStudentResultProps> = ({ onBack, studentName
       
       {/* Header Navigation */}
       <div className="flex justify-between items-center mb-10">
-        <button onClick={onBack} className="text-gray-500 hover:text-[#1a38cf] flex items-center mb-6 text-sm font-medium transition-colors">
+        <button onClick={onBack || (() => navigate(-1))} className="text-gray-500 hover:text-[#1a38cf] flex items-center mb-6 text-sm font-medium transition-colors">
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back
         </button>

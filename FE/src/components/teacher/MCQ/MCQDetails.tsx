@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import * as XLSX from 'xlsx';
-import { ArrowLeft, Calendar, FileText, Lightbulb, MoreHorizontal, Search, DownloadCloud } from 'lucide-react';
+import { ArrowLeft, Calendar, DownloadCloud } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import MCQStudentResult from './MCQStudentResult';
+import { useNavigate, useParams } from 'react-router-dom';
 
 interface MCQDetailsProps {
   onBack?: () => void;
@@ -30,8 +30,15 @@ const questionData = [
 ];
 
 const MCQDetails: React.FC<MCQDetailsProps> = ({ onBack, assignmentTitle }) => {
+  const navigate = useNavigate();
+  const { examId } = useParams();
   const [reviewingStudent, setReviewingStudent] = useState<string | null>(null);
   const totalStudents = mockSubmissions.length;
+
+  const handleReview = (subId: string) => {
+    if (examId) navigate(`/teacher/exams/mcq/${examId}/review/${subId}`);
+    else setReviewingStudent(subId);
+  };
 
   const exportSubmissionsToExcel = () => {
     const worksheetData = mockSubmissions.map((submission) => ({
@@ -56,7 +63,7 @@ const MCQDetails: React.FC<MCQDetailsProps> = ({ onBack, assignmentTitle }) => {
     
         {/* Header Navigation */}
         <div className="flex justify-between items-center mb-6">
-            <button onClick={onBack} className="text-gray-500 hover:text-[#1a38cf] flex items-center mb-6 text-sm font-medium transition-colors">
+            <button onClick={onBack || (() => navigate(-1))} className="text-gray-500 hover:text-[#1a38cf] flex items-center mb-6 text-sm font-medium transition-colors">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
           </button>
@@ -148,7 +155,7 @@ const MCQDetails: React.FC<MCQDetailsProps> = ({ onBack, assignmentTitle }) => {
                     <td className="py-5 px-8 text-right">
                       {sub.status === 'Not Submitted' ? null : sub.status === 'Graded' ? (
                         <button
-                          onClick={() => setReviewingStudent(sub.name)}
+                          onClick={() => handleReview(sub.stt)}
                           className="text-[#1a38cf] font-semibold text-sm hover:underline"
                         >
                           Review

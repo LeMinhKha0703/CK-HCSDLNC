@@ -25,7 +25,7 @@ CK-HCSDLNC/
 │   │   ├── components/
 │   │   │   ├── common/      # ProtectedRoute, ExamSidebar
 │   │   │   ├── student/     # Giao diện Sinh viên (Đã TSX & API)
-│   │   │   ├── teacher/     # Giao diện Giảng viên (Đang hoàn thiện)
+│   │   │   ├── teacher/     # Giao diện Giảng viên (Đã TSX & API)
 │   │   │   └── sidebar/     # Sidebars linh hoạt theo Role
 │   │   ├── context/         # AuthContext quản lý Login/Session
 │   │   ├── App.tsx          # Routing trung tâm chuẩn theo SCREEN.md
@@ -61,17 +61,24 @@ CK-HCSDLNC/
 
 ## 4. Những gì CHƯA làm được (What's Next)
 
-### Phase 4: Teacher & Admin FE Integration
-- [ ] **Teacher Components**:
-    - Chuyển đổi các file `.tsx` hiện tại từ Mock data sang API calls.
-    - `GroupManagement`: API Create Group, Invite Student (.xlsx support).
-    - `ExamManagement`: API Create Exam (Polyglot flow), Dashboard Analytics (Recharts).
-    - `GradeEssay`: Logic chấm điểm từng câu, tính tổng điểm nộp về BE.
-- [ ] **Admin Components**:
-    - `Admin.tsx`: CRUD User thực tế qua API `/api/admin/users`.
-    - Chuyển đổi logic từ LocalStorage sang DB thực.
-- [ ] **Analytics**:
-    - Triển khai các biểu đồ thực tế (Average Score, Question Performance) dựa trên dữ liệu thật từ BE.
+### Phase 4: Teacher & Admin FE Integration (100% complete)
+- [x] **Teacher Module**:
+    - `GroupManagement.tsx`: API Fetch/Create Groups, Invite students thực tế.
+    - `ExamManagement.tsx`: API Fetch Exams, Dashboard Stats tổng hợp từ BE.
+    - `GroupDetails.tsx`: API Fetch Students & Performance Stats.
+    - `GradeEssay.tsx`: Kết nối API chấm điểm thực, lưu kết quả vào SQL/Mongo.
+- [x] **Admin Module**:
+    - `Admin.tsx`: CRUD User thực tế (Search, Filter Role, Pagination).
+    - `CreateUser.tsx`: Tạo tài khoản mới trực tiếp vào DB qua API.
+- [x] **Analytics & UI Polish**:
+    - Tích hợp `Recharts` hiển thị biểu đồ phân bổ điểm và hiệu suất câu hỏi.
+    - Chuyển đổi 100% Codebase sang TypeScript (`.tsx`), xóa bỏ hoàn toàn `.jsx`.
+
+## 4. Những gì CHƯA làm được (What's Next)
+
+- [ ] **Deployment**: Triển khai lên Cloud (AWS/Vercel) hoặc hoàn thiện Docker Compose cho Production.
+- [ ] **Stress Test**: Chạy script nạp 10,000+ records để demo sức mạnh của Indexed Views & Mongo Aggregation.
+- [ ] **Advanced Features**: Xuất báo cáo PDF, AI gợi ý nhận xét bài làm Essay.
 
 ## 5. Lưu ý cho Agent tiếp theo
 - **Base URL**: Backend chạy tại `http://localhost:8000`.

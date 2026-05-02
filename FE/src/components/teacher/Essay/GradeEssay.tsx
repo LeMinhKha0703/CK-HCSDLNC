@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Clock, BookOpen, MessageSquare, Save, Lightbulb, ChevronLeft, ChevronRight, FileText  } from 'lucide-react';
+import { ArrowLeft, Clock, MessageSquare, Save, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { gradeSubmission } from '../../../api/teacher';
 
 interface GradeEssayProps {
   onBack?: () => void;
@@ -31,15 +33,42 @@ const mockQuestions = Array.from({ length: 50 }, (_, i) => ({
 }));
 
 const GradeEssay: React.FC<GradeEssayProps> = ({ onBack, studentName }) => {
+  const { examId, submissionId } = useParams();
+  const navigate = useNavigate();
   const [currentQuestionId, setCurrentQuestionId] = useState(1);
+  const [score, setScore] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   const currentQuestionInfo = mockQuestions.find(q => q.id === currentQuestionId) || mockQuestions[0];
+
+  const handleSave = async () => {
+    if (!examId || !submissionId) {
+      alert('Thiếu thông tin bài nộp');
+      return;
+    }
+    if (!score.trim()) {
+      alert('Vui lòng nhập điểm trước khi lưu');
+      return;
+    }
+    setIsSaving(true);
+    try {
+      await gradeSubmission(examId, submissionId, {
+        grades: [{ questionId: currentQuestionId, score: parseFloat(score) }]
+      });
+      alert('Đã lưu điểm thành công!');
+      navigate(-1);
+    } catch (err) {
+      alert('Lỗi khi lưu điểm!');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="max-w-6xl mx-auto pt-6">
     
         {/* Header Navigation */}
         <div className="flex justify-between items-center mb-10">
-            <button onClick={onBack} className="text-gray-500 hover:text-[#1a38cf] flex items-center mb-6 text-sm font-medium transition-colors">
+            <button onClick={onBack || (() => navigate(-1))} className="text-gray-500 hover:text-[#1a38cf] flex items-center mb-6 text-sm font-medium transition-colors">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
             </button>
@@ -139,15 +168,24 @@ const GradeEssay: React.FC<GradeEssayProps> = ({ onBack, studentName }) => {
                     <div className="mb-6">
                         <label className="block text-xs font-bold text-gray-700 mb-2">Overall Score / 100</label>
                         <div className="relative">
-                            <input type="text" placeholder="e.g. 85" className="w-full bg-[#f0f2f5] border border-transparent focus:border-[#1a38cf] focus:bg-white rounded-lg py-3 px-4 outline-none text-gray-900 font-medium transition-colors" />
+                            <input 
+                              type="number" 
+                              min="0" max="100"
+                              placeholder="e.g. 85" 
+                              value={score}
+                              onChange={e => setScore(e.target.value)}
+                              className="w-full bg-[#f0f2f5] border border-transparent focus:border-[#1a38cf] focus:bg-white rounded-lg py-3 px-4 outline-none text-gray-900 font-medium transition-colors" />
                             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium text-sm">pts</span>
                         </div>
                     </div>
 
 
-                    <button className="w-full bg-[#0a44cc] hover:bg-[#0a3bbb] text-white py-3.5 rounded-lg font-bold text-sm flex justify-center items-center transition-colors shadow-sm">
+                    <button 
+                      onClick={handleSave}
+                      disabled={isSaving}
+                      className="w-full bg-[#0a44cc] hover:bg-[#0a3bbb] text-white py-3.5 rounded-lg font-bold text-sm flex justify-center items-center transition-colors shadow-sm disabled:opacity-60">
                     <Save className="w-4 h-4 mr-2" />
-                    Save Evaluation
+                    {isSaving ? 'Đang lưu...' : 'Save Evaluation'}
                     </button>
                 </div>
             </div>

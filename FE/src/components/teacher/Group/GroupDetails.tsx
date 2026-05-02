@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { UserPlus, DownloadCloud, ArrowLeft } from 'lucide-react';
 import StatCard from './StatCard';
 import { TrendingUp, AlertTriangle, Star } from 'lucide-react';
 import InviteStudentsModal from './InviteStudentsModal';
+import { useParams, useNavigate } from 'react-router-dom';
+import { getGroupStudents, inviteStudents } from '../../../api/teacher';
 
 export interface GroupStudent {
   id: string;
@@ -15,14 +17,21 @@ export interface GroupStudent {
   gradeColorText: string;
 }
 
-const mockStudents: GroupStudent[] = [
-  { id: '1', stt: '01', name: 'Alexander Wright', email: 'a.wright@university.edu', averageGrade: '9.2', gradeColorBg: 'bg-[#d1f4e0]', gradeColorText: 'text-[#0e7040]' },
-  { id: '2', stt: '02', name: 'Benjamin Foster', email: 'b.foster@university.edu', averageGrade: '7.5', gradeColorBg: 'bg-[#e5e7eb]', gradeColorText: 'text-[#374151]' },
-  { id: '3', stt: '03', name: 'Chloe Simmons', email: 'c.simmons@university.edu', averageGrade: '4.8', gradeColorBg: 'bg-[#fee2e2]', gradeColorText: 'text-[#991b1b]' },
-  { id: '4', stt: '04', name: 'David Chen', email: 'd.chen@university.edu', averageGrade: '6.9', gradeColorBg: 'bg-[#e5e7eb]', gradeColorText: 'text-[#374151]' },
-  { id: '5', stt: '05', name: 'Emma Thompson', email: 'e.thompson@university.edu', averageGrade: '8.7', gradeColorBg: 'bg-[#d1f4e0]', gradeColorText: 'text-[#0e7040]' },
-  { id: '6', stt: '06', name: 'Frankie Müller', email: 'f.muller@university.edu', averageGrade: '3.2', gradeColorBg: 'bg-[#fee2e2]', gradeColorText: 'text-[#991b1b]' },
-];
+export interface GroupStudent {
+  id: string;
+  stt: string;
+  name: string;
+  email: string;
+  averageGrade: string;
+  gradeColorBg: string;
+  gradeColorText: string;
+}
+
+interface GroupStats {
+  totalStudents: number;
+  gradeLow: number;
+  gradeHigh: number;
+}
 
 interface GroupDetailsProps {
   onBack?: () => void;
@@ -31,40 +40,104 @@ interface GroupDetailsProps {
   hideStats?: boolean;
 }
 
+const getGradeColors = (grade: number) => {
+  if (grade < 5) return { bg: 'bg-[#fee2e2]', text: 'text-[#991b1b]' };
+  if (grade > 8) return { bg: 'bg-[#d1f4e0]', text: 'text-[#0e7040]' };
+  return { bg: 'bg-[#e5e7eb]', text: 'text-[#374151]' };
+};
+
 const GroupDetails: React.FC<GroupDetailsProps> = ({ onBack, groupTitle, students, hideStats = false }) => {
+  const { groupId } = useParams();
+  const navigate = useNavigate();
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-  const [displayedStudents, setDisplayedStudents] = useState<GroupStudent[]>(students ?? mockStudents);
+  const [displayedStudents, setDisplayedStudents] = useState<GroupStudent[]>(students ?? []);
+  const [stats, setStats] = useState<GroupStats>({ totalStudents: 0, gradeLow: 0, gradeHigh: 0 });
+  const [groupName, setGroupName] = useState(groupTitle || 'Group Details');
+  const [isLoading, setIsLoading] = useState(!students);
 
-  const formatStudentName = (email: string) => {
-    const localPart = email.split('@')[0] || email;
-    return localPart
-      .split(/[._-]+/)
-      .filter(Boolean)
-      .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
-      .join(' ');
-  };
+  useEffect(() => {
+    if (groupId && !students) {
+      setIsLoading(true);
+      getGroupStudents(groupId)
+        .then(res => {
+          const data = res.data;
+          setGroupName(data.groupName || 'Group Details');
+          const mapped: GroupStudent[] = (data.students || []).map((s: { userId: string; fullName: string; email: string; averageGrade: number }, idx: number) => {
+            const grade = parseFloat(s.averageGrade?.toString() || '0');
+            const colors = getGradeColors(grade);
+            return {
+              id: s.userId,
+              stt: String(idx + 1).padStart(2, '0'),
+              name: s.fullName,
+              email: s.email,
+              averageGrade: grade.toFixed(1),
+              gradeColorBg: colors.bg,
+              gradeColorText: colors.text,
+            };
+          });
+          setDisplayedStudents(mapped);
+          setStats({
+            totalStudents: mapped.length,
+            gradeLow: mapped.filter(s => parseFloat(s.averageGrade) < 5).length,
+            gradeHigh: mapped.filter(s => parseFloat(s.averageGrade) > 8).length,
+          });
+        })
+        .catch(console.error)
+        .finally(() => setIsLoading(false));
+    } else if (students) {
+      setDisplayedStudents(students);
+      setStats({
+        totalStudents: students.length,
+        gradeLow: students.filter(s => parseFloat(s.averageGrade) < 5).length,
+        gradeHigh: students.filter(s => parseFloat(s.averageGrade) > 8).length,
+      });
+    }
+  }, [groupId, students]);
 
-  const handleInviteStudents = (studentEmails: string[]) => {
-    setDisplayedStudents((currentStudents) => {
-      const existingEmails = new Set(currentStudents.map((student) => student.email.toLowerCase()));
-      const newStudents = studentEmails
-        .map((email, index) => ({
-          email: email.trim(),
-          index,
-        }))
-        .filter(({ email }) => email && !existingEmails.has(email.toLowerCase()))
-        .map(({ email }, index) => ({
-          id: `${Date.now()}-${currentStudents.length + index}`,
-          stt: String(currentStudents.length + index + 1).padStart(2, '0'),
-          name: formatStudentName(email),
-          email,
-          averageGrade: '',
-          gradeColorBg: 'bg-[#e5e7eb]',
-          gradeColorText: 'text-[#374151]',
-        }));
-
-      return [...currentStudents, ...newStudents];
-    });
+  const handleInviteStudents = async (studentEmails: string[]) => {
+    try {
+      if (groupId) {
+        await inviteStudents(groupId, studentEmails);
+        // Reload sau khi invite thành công
+        const res = await getGroupStudents(groupId);
+        const data = res.data;
+        const mapped: GroupStudent[] = (data.students || []).map((s: { userId: string; fullName: string; email: string; averageGrade: number }, idx: number) => {
+          const grade = parseFloat(s.averageGrade?.toString() || '0');
+          const colors = getGradeColors(grade);
+          return {
+            id: s.userId,
+            stt: String(idx + 1).padStart(2, '0'),
+            name: s.fullName,
+            email: s.email,
+            averageGrade: grade.toFixed(1),
+            gradeColorBg: colors.bg,
+            gradeColorText: colors.text,
+          };
+        });
+        setDisplayedStudents(mapped);
+      } else {
+        // Fallback khi dùng local (không có groupId)
+        const existingEmails = new Set(displayedStudents.map(s => s.email.toLowerCase()));
+        const newStudents = studentEmails
+          .filter(email => email && !existingEmails.has(email.toLowerCase()))
+          .map((email, idx) => {
+            const localPart = email.split('@')[0] || email;
+            const name = localPart.split(/[._-]+/).filter(Boolean).map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+            return {
+              id: `${Date.now()}-${idx}`,
+              stt: String(displayedStudents.length + idx + 1).padStart(2, '0'),
+              name,
+              email,
+              averageGrade: '',
+              gradeColorBg: 'bg-[#e5e7eb]',
+              gradeColorText: 'text-[#374151]',
+            };
+          });
+        setDisplayedStudents(prev => [...prev, ...newStudents]);
+      }
+    } catch (err) {
+      alert('Invite thất bại!');
+    }
   };
 
   const exportStudentsToExcel = () => {
@@ -74,22 +147,26 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({ onBack, groupTitle, student
       Email: student.email,
       'Average Grade': student.averageGrade,
     }));
-
     const worksheet = XLSX.utils.json_to_sheet(worksheetData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Students');
-    const fileName = `${groupTitle?.replace(/\s+/g, '-') || 'group'}-directory.xlsx`;
+    const fileName = `${groupName.replace(/\s+/g, '-')}-directory.xlsx`;
     XLSX.writeFile(workbook, fileName);
+  };
+
+  const handleBack = () => {
+    if (onBack) onBack();
+    else navigate(-1);
   };
 
   return (
       <div className="max-w-6xl mx-auto pt-6">
-        <button onClick={onBack} className="text-gray-500 hover:text-[#1a38cf] flex items-center mb-6 text-sm font-medium transition-colors">
+        <button onClick={handleBack} className="text-gray-500 hover:text-[#1a38cf] flex items-center mb-6 text-sm font-medium transition-colors">
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back
         </button>
         <div className="mb-10">
-          <h1 className="text-4xl font-bold text-[#111827] mb-3 tracking-tight">{groupTitle || 'Group Details'}</h1>
+          <h1 className="text-4xl font-bold text-[#111827] mb-3 tracking-tight">{groupName}</h1>
           <p className="text-gray-500 text-[15px]">Academic Performance & Student Progress Overview</p>
         </div>
 
@@ -102,7 +179,7 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({ onBack, groupTitle, student
             badgeBgColor="bg-[#e0e7ff]"
             badgeTextColor="text-[#1a38cf]"
             title="TOTAL STUDENTS"
-            value={hideStats ? '' : String(displayedStudents.length)}
+            value={hideStats ? '' : String(stats.totalStudents || displayedStudents.length)}
             subtitle="Students"
           />
           <StatCard 
@@ -112,7 +189,7 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({ onBack, groupTitle, student
             badgeBgColor="bg-[#fee2e2]"
             badgeTextColor="text-[#dc2626]"
             title="GRADE < 5.0"
-            value={hideStats ? '' : '04'}
+            value={hideStats ? '' : String(stats.gradeLow)}
             subtitle="Students"
           />
           <StatCard 
@@ -122,7 +199,7 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({ onBack, groupTitle, student
             badgeBgColor="bg-[#d1fae5]"
             badgeTextColor="text-[#059669]"
             title="GRADE > 8.0"
-            value={hideStats ? '' : '12'}
+            value={hideStats ? '' : String(stats.gradeHigh)}
             subtitle="Students"
           />
         </div>

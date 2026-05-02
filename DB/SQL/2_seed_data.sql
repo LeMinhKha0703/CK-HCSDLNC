@@ -21,10 +21,10 @@ DECLARE @ExamEssayID UNIQUEIDENTIFIER = NEWID();
 
 -- 1. Insert Users (Password đang giả định là hashed)
 INSERT INTO Users (UserID, FullName, Email, PasswordHash, Role) VALUES 
-(@AdminID, 'System Admin', 'admin@elearning.com', 'hashed_pw', 'Admin'),
-(@TeacherID, 'Nguyen Van Teacher', 'teacher@elearning.com', 'hashed_pw', 'Teacher'),
-(@Student1ID, 'Tran Thi Student', 'student1@elearning.com', 'hashed_pw', 'Student'),
-(@Student2ID, 'Le Van Student', 'student2@elearning.com', 'hashed_pw', 'Student');
+(@AdminID, 'System Admin', 'admin@elearning.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', 'Admin'),
+(@TeacherID, 'Nguyen Van Teacher', 'teacher@elearning.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', 'Teacher'),
+(@Student1ID, 'Tran Thi Student', 'student1@elearning.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', 'Student'),
+(@Student2ID, 'Le Van Student', 'student2@elearning.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', 'Student');
 
 -- 2. Insert Group
 INSERT INTO Groups (GroupID, TeacherID, GroupName, TotalStudent) VALUES 

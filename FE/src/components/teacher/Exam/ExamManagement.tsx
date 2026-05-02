@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
-import { DownloadCloud, Plus, Filter, TrendingUp, CheckCircle, FileText, ClipboardList } from 'lucide-react';
-import AssignmentDetails from '../Essay/EssayDetails';
-import MCQDetails from '../MCQ/MCQDetails';
-import CreateExam from './CreateExam';
+import { DownloadCloud, Plus, TrendingUp, CheckCircle, FileText, ClipboardList } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { getExams, createExam } from '../../../api/teacher';
 
 const mockAssignments = [
   {
@@ -249,6 +248,7 @@ const mockAssignments = [
 ];
 
 type AssignmentRecord = {
+  examId: string;
   stt: string;
   name: string;
   group: string;
@@ -258,31 +258,36 @@ type AssignmentRecord = {
 };
 
 const ExamManagement = () => {
-  const [selectedAssignment, setSelectedAssignment] = useState<{name: string, type: string} | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
+  const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
-  const [assignments, setAssignments] = useState<AssignmentRecord[]>(mockAssignments);
+  const [assignments, setAssignments] = useState<AssignmentRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const pageSize = 5;
-  const totalPages = Math.ceil(assignments.length / pageSize);
+  const totalPages = Math.max(1, Math.ceil(assignments.length / pageSize));
   const visibleAssignments = assignments.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-  const currentStart = (currentPage - 1) * pageSize + 1;
+  const currentStart = assignments.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
   const currentEnd = Math.min(currentPage * pageSize, assignments.length);
   const pageWindowStart = Math.min(Math.max(1, currentPage), Math.max(1, totalPages - 2));
   const paginationPages = Array.from({ length: Math.min(3, totalPages) }, (_, i) => pageWindowStart + i);
 
-  const handleCreateExam = (exam: { name: string; group: string; type: string; createdAt: string; dueDate: string }) => {
-    setAssignments((currentAssignments) => [
-      ...currentAssignments,
-      {
-        stt: String(currentAssignments.length + 1).padStart(2, '0'),
-        name: exam.name,
-        group: exam.group,
-        type: exam.type,
-        createdAt: exam.createdAt,
-        dueDate: exam.dueDate,
-      },
-    ]);
-  };
+  useEffect(() => {
+    setIsLoading(true);
+    getExams()
+      .then(res => {
+        const data = res.data.map((e: { examId: string; title: string; groupName: string; type: string; createdAt: string; endAt: string }, idx: number) => ({
+          examId: e.examId,
+          stt: String(idx + 1).padStart(2, '0'),
+          name: e.title,
+          group: e.groupName,
+          type: e.type,
+          createdAt: new Date(e.createdAt).toLocaleDateString('vi-VN'),
+          dueDate: e.endAt ? new Date(e.endAt).toLocaleDateString('vi-VN') : '-',
+        }));
+        setAssignments(data);
+      })
+      .catch(console.error)
+      .finally(() => setIsLoading(false));
+  }, []);
 
   const exportAssignmentsToExcel = () => {
     const worksheetData = assignments.map((assignment) => ({
@@ -293,24 +298,11 @@ const ExamManagement = () => {
       'Created At': assignment.createdAt,
       'Due Date': assignment.dueDate,
     }));
-
     const worksheet = XLSX.utils.json_to_sheet(worksheetData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Assignments');
     XLSX.writeFile(workbook, 'assignments-directory.xlsx');
   };
-
-  if (isCreating) {
-    return <CreateExam onBack={() => setIsCreating(false)} onCreateExam={handleCreateExam} />;
-  }
-
-  if (selectedAssignment && selectedAssignment.type === 'Essay') {
-    return <AssignmentDetails assignmentTitle={selectedAssignment.name} onBack={() => setSelectedAssignment(null)} />;
-  }
-
-  if (selectedAssignment && selectedAssignment.type === 'MCQ') {
-    return <MCQDetails assignmentTitle={selectedAssignment.name} onBack={() => setSelectedAssignment(null)} />;
-  }
 
   return (
       <div className="max-w-6xl mx-auto pt-6">
@@ -318,41 +310,36 @@ const ExamManagement = () => {
           <div className="max-w-2xl">
             <h1 className="text-4xl font-bold text-[#111827] mb-3 tracking-tight">Exam Management</h1>
             <p className="text-gray-600 text-[15px] leading-relaxed">
-              Curate, analyze, and manage student assessments with editorial precision. View performance trends across all assignment formats.
+              Curate, analyze, and manage student assessments with editorial precision.
             </p>
           </div>
         </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          {/* Total Assignments */}
           <div className="bg-[#f0f2f5] rounded-xl p-8 border border-white relative overflow-hidden h-[180px] shadow-sm">
             <div className="relative z-10 flex flex-col h-full justify-between">
               <p className="text-gray-700 text-[14px] font-medium">Total Assignments</p>
-              <h2 className="text-[54px] font-bold text-[#1a4cd2] leading-none mb-1">124</h2>
+              <h2 className="text-[54px] font-bold text-[#1a4cd2] leading-none mb-1">{assignments.length}</h2>
             </div>
             <div className="absolute -right-4 -bottom-10 opacity-[0.04] text-gray-900 pointer-events-none">
               <ClipboardList className="w-44 h-44" strokeWidth={1} />
             </div>
           </div>
-
-          {/* Multiple Choice Assignments */}
           <div className="bg-[#f0f2f5] rounded-xl p-8 border border-white relative overflow-hidden h-[180px] shadow-sm">
             <div className="relative z-10 flex flex-col h-full justify-between">
               <p className="text-gray-700 text-[14px] font-medium">Multiple Choice Assignments</p>
-              <h2 className="text-[54px] font-bold text-[#1a4cd2] leading-none mb-1">82</h2>
+              <h2 className="text-[54px] font-bold text-[#1a4cd2] leading-none mb-1">{assignments.filter(a => a.type === 'MCQ').length}</h2>
             </div>
             <div className="absolute -right-4 -bottom-6 opacity-[0.04] text-gray-900 pointer-events-none flex flex-col space-y-3">
               <div className="flex items-center space-x-3"><CheckCircle className="w-12 h-12" /><div className="w-16 h-4 bg-gray-900 rounded"></div></div>
               <div className="flex items-center space-x-3"><CheckCircle className="w-12 h-12" /><div className="w-16 h-4 bg-gray-900 rounded"></div></div>
             </div>
           </div>
-
-          {/* Essay Assignments */}
           <div className="bg-[#f0f2f5] rounded-xl p-8 border border-white relative overflow-hidden h-[180px] shadow-sm">
             <div className="relative z-10 flex flex-col h-full justify-between">
               <p className="text-gray-700 text-[14px] font-medium">Essay Assignments</p>
-              <h2 className="text-[54px] font-bold text-[#1a4cd2] leading-none mb-1">42</h2>
+              <h2 className="text-[54px] font-bold text-[#1a4cd2] leading-none mb-1">{assignments.filter(a => a.type === 'Essay').length}</h2>
             </div>
             <div className="absolute -right-4 -bottom-8 opacity-[0.04] text-gray-900 pointer-events-none">
               <FileText className="w-44 h-44" strokeWidth={1} />
@@ -366,7 +353,7 @@ const ExamManagement = () => {
             <h2 className="text-xl font-bold text-[#111827]">Assignments</h2>
             <div className="flex space-x-3 items-center">
               <button 
-                onClick={() => setIsCreating(true)}
+                onClick={() => navigate('/teacher/createexam')}
                 className="bg-[#1a4cd2] hover:bg-blue-800 text-white px-5 py-3 rounded-lg font-bold text-[14px] flex items-center shadow-sm transition-colors mt-2"
               >
                 <Plus className="w-4 h-4 mr-2 stroke-[3px]" />
@@ -394,12 +381,17 @@ const ExamManagement = () => {
                  </tr>
                </thead>
                <tbody className="divide-y divide-gray-50">
-                 {visibleAssignments.map((assignment, idx) => (
+                 {isLoading ? (
+                   <tr><td colSpan={5} className="text-center py-8 text-slate-400">Đang tải...</td></tr>
+                 ) : visibleAssignments.length === 0 ? (
+                   <tr><td colSpan={5} className="text-center py-8 text-slate-400">Chưa có bài kiểm tra nào</td></tr>
+                 ) : visibleAssignments.map((assignment, idx) => (
                   <tr 
                     key={idx} 
-                    className={`hover:bg-gray-50/50 transition-colors group ${assignment.type === 'Essay' || assignment.type === 'MCQ' ? 'cursor-pointer' : ''}`}
+                    className={`hover:bg-gray-50/50 transition-colors group cursor-pointer`}
                     onClick={() => {
-                      if (assignment.type === 'Essay' || assignment.type === 'MCQ') setSelectedAssignment({name: assignment.name, type: assignment.type});
+                      if (assignment.type === 'Essay') navigate(`/teacher/exams/essay/${assignment.examId}`);
+                      else navigate(`/teacher/exams/mcq/${assignment.examId}`);
                     }}
                   >
                      <td className="py-5 px-8 text-[14px] text-gray-500 font-medium">

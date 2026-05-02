@@ -1,20 +1,29 @@
+// src/components/student/DeleteUserModal.tsx
 import React from 'react';
 
-const DeleteUserModal = ({ isOpen, onClose, onConfirm, userData }) => {
+interface UserData {
+  id?: string;
+  name?: string;
+  email?: string;
+  role?: string;
+}
+
+interface DeleteUserModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  userData: UserData | null;
+}
+
+const DeleteUserModal: React.FC<DeleteUserModalProps> = ({ isOpen, onClose, onConfirm, userData }) => {
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop - Bấm ra ngoài để đóng */}
-      <div 
-        className="absolute inset-0 bg-[#191c1d]/40 backdrop-blur-sm" 
-        onClick={onClose}
-      ></div>
+      <div className="absolute inset-0 bg-[#191c1d]/40 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Modal Container */}
-      <div className="relative w-full max-w-md bg-white rounded-2xl shadow-[0_32px_64px_rgba(25,28,29,0.1)] overflow-hidden animate-in fade-in zoom-in duration-200">
+      <div className="relative w-full max-w-md bg-white rounded-2xl shadow-[0_32px_64px_rgba(25,28,29,0.1)] overflow-hidden">
         <div className="p-8">
-          {/* Icon/Header */}
           <div className="flex items-center gap-4 mb-6">
             <div className="w-12 h-12 rounded-xl bg-[#ffdad6] flex items-center justify-center text-[#ba1a1a]">
               <span className="material-symbols-outlined text-2xl">warning</span>
@@ -25,17 +34,15 @@ const DeleteUserModal = ({ isOpen, onClose, onConfirm, userData }) => {
             </div>
           </div>
 
-          {/* Nội dung thông báo */}
           <p className="text-slate-600 leading-relaxed font-medium mb-8">
             Are you sure you want to delete this user? This action cannot be undone.
           </p>
 
-          {/* Thông tin user bị xóa */}
           <div className="bg-[#f3f4f5] rounded-xl p-4 mb-8">
             <p className="text-sm font-bold text-[#191c1d]">{userData?.name || 'User Name'}</p>
+            <p className="text-xs text-slate-400">{userData?.email}</p>
           </div>
 
-          {/* Nút bấm hành động */}
           <div className="flex gap-3">
             <button 
               onClick={onClose}

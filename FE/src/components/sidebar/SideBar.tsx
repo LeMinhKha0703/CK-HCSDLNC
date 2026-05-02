@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Users, FileText, LogOut } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 interface SideBarProps {
   type?: 'exam' | 'admin' | 'student' | 'teacher';
@@ -17,27 +18,31 @@ const SideBar = ({
   onQuestionSelect,
   answers = {},
   questions = [],
-  activeMenu = 'groups',
-  setActiveMenu = () => {},
 }: SideBarProps) => {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   if (type === 'teacher') {
+    const path = window.location.pathname;
     return (
       <div className="w-64 bg-[#f8f9fc] h-screen border-r border-gray-200 flex flex-col py-8 shadow-sm">
-        <div className="px-8 mb-5">
+        <div className="px-8 mb-2">
           <h1 className="text-[#1a38cf] font-bold text-lg tracking-tight">Teacher</h1>
         </div>
-
-        <div className="px-8 mb-12">
-          <h1 className="text-gray-500 font-semibold text-sm tracking-tight">(Teacher's name here)</h1>
+        <div className="px-8 mb-8">
+          <p className="text-gray-500 font-semibold text-sm">{user?.fullName || 'Teacher'}</p>
         </div>
 
         <nav className="flex-1 space-y-2">
           <button
-            onClick={() => setActiveMenu('groups')}
+            onClick={() => navigate('/teacher/groupmanagement')}
             className={`w-full flex items-center px-8 py-3 transition-colors font-medium ${
-              activeMenu === 'groups'
+              path.includes('groupmanagement') || (path.includes('/teacher/group') && !path.includes('exam'))
                 ? 'bg-white text-[#1a38cf] shadow-sm border-r-[3px] border-[#1a38cf]'
                 : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
             }`}
@@ -46,9 +51,9 @@ const SideBar = ({
             Group Management
           </button>
           <button
-            onClick={() => setActiveMenu('exams')}
+            onClick={() => navigate('/teacher/exammanagement')}
             className={`w-full flex items-center px-8 py-3 transition-colors font-medium ${
-              activeMenu === 'exams'
+              path.includes('exammanagement') || path.includes('createexam') || path.includes('/teacher/exams')
                 ? 'bg-white text-[#1a38cf] shadow-sm border-r-[3px] border-[#1a38cf]'
                 : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
             }`}
@@ -58,7 +63,7 @@ const SideBar = ({
           </button>
           <button
             type="button"
-            onClick={() => navigate('/login')}
+            onClick={handleLogout}
             className="flex w-full items-center px-8 py-3 text-gray-500 hover:text-gray-700 transition-colors font-medium"
           >
             <LogOut className="w-5 h-5 mr-3 -rotate-180" />
