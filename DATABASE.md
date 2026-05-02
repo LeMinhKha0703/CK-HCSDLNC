@@ -1,62 +1,72 @@
-# 1. Phân tích thiết kế Relational Database (SQL Server)
+# Thiết kế Cơ sở dữ liệu (Polyglot Persistence)
 
-Với SQL Server, chiến lược là **Chuẩn hóa dữ liệu (Normalization)** để đảm bảo tính toàn vẹn (ACID) và sử dụng **Indexing/Views** để tăng tốc độ truy vấn phân tích.
+Để tối ưu hóa cả tính toàn vẹn dữ liệu và hiệu năng truy vấn cho dữ liệu lớn/phức tạp, hệ thống áp dụng thiết kế đa ngôn ngữ CSDL. 
+Nguyên tắc: **SQL Server** chịu trách nhiệm cho dữ liệu cấu trúc, quan hệ và định danh; **MongoDB** chịu trách nhiệm cho các dữ liệu văn bản lớn, mảng dữ liệu (như nội dung câu hỏi, chi tiết bài làm) và phục vụ phân tích (Analytics).
 
-## Thiết kế Bảng (Tables)
+## 1. Cơ sở dữ liệu Quan hệ (SQL Server)
 
+SQL Server đóng vai trò là "Core Database", quản lý các thực thể chính, trạng thái và điểm số tổng để đảm bảo ACID.
+
+### Thiết kế Bảng (Tables)
 * **Users:** Lưu thông tin tài khoản dùng chung.
-  * `UserID` (PK), `FullName`, `Email` (Unique, Indexed), `PasswordHash`, `Role` (Student, Teacher, Admin).
-* **Groups:** Nhóm học.
+  * `UserID` (PK, GUID), `FullName`, `Email` (Unique, Indexed), `PasswordHash`, `Role` (Student, Teacher, Admin), `CreatedAt`.
+* **Groups:** Thông tin nhóm học do Giảng viên quản lý.
   * `GroupID` (PK), `TeacherID` (FK -> Users), `GroupName`, `TotalStudent`, `CreatedAt`.
-* **Group_Students:** Bảng trung gian (Many-to-Many).
+* **Group_Students:** Bảng trung gian quản lý danh sách sinh viên trong nhóm.
   * `GroupID` (FK), `StudentID` (FK), `JoinedDate`. (Composite PK: GroupID, StudentID).
-* **Notifications:** Lưu lời mời vào nhóm.
-  * `NotifID` (PK), `UserID` (FK), `Title`, `Content`, `Type` (Invite_Group, normal), `SendDate`.
-* **Exams:** Thông tin bài kiểm tra.
-  * `ExamID` (PK), `GroupID` (FK), `Title`, `Type` (Essay, MCQ), `TotalQuestions`, `CreatedAt`, `EndAt`.
-* **Questions:** Chi tiết từng câu hỏi (phục vụ tính toán tỷ lệ thất bại).
-  * `QuestionID` (PK), `ExamID` (FK), `Content`, `CorrectAnswer`.
-* **Submissions:** Lưu kết quả làm bài.
-  * `SubmissionID` (PK), `ExamID` (FK), `StudentID` (FK), `TotalScore`, `Status` (Pending, Graded, Locked), `SubmitedAt`.
-* **Submission_Details:** Lưu câu trả lời chi tiết của sinh viên.
-  * `DetailID` (PK), `SubmissionID` (FK), `QuestionID` (FK), `StudentAnswer`, `IsCorrect` (Bit: 1 đúng, 0 sai).
-* **Materials:** Tài liệu bổ trợ.
-  * `MaterialID` (PK), `GroupID` (FK), `FileURL/Content`.
+* **Notifications:** Quản lý thông báo và lời mời.
+  * `NotifID` (PK), `UserID` (FK), `Title`, `Content`, `Type` (Invite_Group, Normal), `TargetID` (VD: GroupID khi mời nhóm), `IsRead`, `SendDate`.
+* **Exams:** Lưu Metadata của bài kiểm tra. Tuyệt đối không lưu nội dung câu hỏi ở đây.
+  * `ExamID` (PK, GUID), `GroupID` (FK), `Title`, `Type` (Essay, MCQ), `TotalQuestions`, `CreatedAt`, `EndAt`.
+* **Submissions:** Lưu siêu dữ liệu bài nộp và điểm tổng (Phục vụ truy vấn nhanh danh sách cho Teacher và Rank cho Student).
+  * `SubmissionID` (PK, GUID), `ExamID` (FK), `StudentID` (FK), `TotalScore`, `Status` (Pending, Graded, Locked), `SubmitedAt`.
 
-## Chiến lược Tối ưu Hiệu năng (SQL Server)
+### Tối ưu Hiệu năng (SQL Server)
+* Sử dụng **Indexed Views** để tính toán **Average Grade** và **Rank Position** của sinh viên trong một Group. Thay vì phải tính lại điểm trên toàn bộ bảng Submissions mỗi khi sinh viên truy cập Dashboard, View này sẽ duy trì kết quả tính toán sẵn.
 
-* **B-Tree Indexing:** Tạo Non-clustered index trên các cột thường xuyên được truy vấn lọc như `Role` trong Users, `GroupID` trong Exams và Submissions.
-* **Indexed Views (Materialized Views) cho Analytics:** * Nghiệp vụ "Xác định sinh viên có nguy cơ" đòi hỏi tính điểm trung bình liên tục. Việc JOIN và tính `AVG()` trực tiếp trên bảng Submissions lớn sẽ gây chậm hệ thống.
-  * Giải pháp là tạo một Indexed View `vw_StudentGroupAverageScore` lưu sẵn kết quả tổng hợp `StudentID`, `GroupID`, `AverageScore`.
-  * Khi giảng viên truy cập, hệ thống chỉ cần query trực tiếp từ View này và `ORDER BY AverageScore ASC LIMIT 10`.
-* **Query Optimization cho "Tỷ lệ thất bại":** Sử dụng Window Functions hoặc `GROUP BY` trên bảng `Submission_Details` kết hợp điều kiện `IsCorrect = 0` để nhanh chóng đếm số lượng trả lời sai trên tổng số lượt trả lời của từng `QuestionID`.
+## 2. Cơ sở dữ liệu Document (MongoDB)
 
+MongoDB đóng vai trò lưu trữ toàn bộ các cấu trúc phức tạp, dữ liệu lồng nhau mà nếu dùng SQL sẽ cần phải JOIN nhiều bảng (Question, Option, CorrectAnswer, StudentAnswer, AnswerScore, v.v.).
 
-# 2. Phân tích thiết kế Document Database (MongoDB)
+### Thiết kế Collections
 
-Với MongoDB, chiến lược là **Khử chuẩn (Denormalization)** và **Nhúng dữ liệu (Embedding)**.
-Chúng ta sẽ gom các dữ liệu thường được đọc cùng nhau vào chung một Document để giảm thiểu thao tác JOIN (Lookup), tối đa hóa tốc độ đọc (Read IOPS).
+Hai Collection dưới đây sẽ sử dụng `_id` đồng nhất với `ExamID` và `SubmissionID` được sinh ra từ SQL Server để làm cầu nối.
 
-## Thiết kế Collections
+* **Exam_Questions** (Nội dung Đề thi)
+  Sử dụng để lấy toàn bộ nội dung đề thi ngay lập tức cho sinh viên mà không cần JOIN bất kỳ bảng nào.
+  ```json
+  {
+    "_id": "ExamID", // Sinh ra từ bảng Exams (SQL)
+    "questions": [
+      {
+        "questionId": 1, // Thứ tự câu hỏi
+        "content": "Nội dung câu hỏi trắc nghiệm / tự luận",
+        "options": ["A", "B", "C", "D"], // Chỉ áp dụng cho MCQ
+        "correctAnswer": "A" // Chỉ áp dụng cho MCQ
+      }
+    ]
+  }
+  ```
 
-* **users:**
-  `{ _id, email, password, role, createdAt }`
-* **groups:** Lưu trữ thông tin nhóm và danh sách thành viên (Mảng tham chiếu).
-  `{ _id, teacherId, name, studentIds: [ObjectId], materials: [{ title, url }] }`
-* **notifications:**
-  `{ _id, userId, content, isRead, type, metadata: { groupId } }`
-* **exams:** Nhúng trực tiếp danh sách câu hỏi vào bài kiểm tra vì chúng luôn được truy xuất cùng lúc khi sinh viên mở bài.
-  `{ _id, groupId, title, type, questions: [ { questionId, content, options, correctAnswer } ] }`
-* **submissions:** Nhúng trực tiếp bài làm chi tiết vào kết quả.
-  `{ _id, examId, studentId, groupId, score, status, answers: [ { questionId, studentAnswer, isCorrect } ] }`
+* **Submission_Answers** (Chi tiết Bài làm)
+  Chứa chi tiết câu trả lời của sinh viên. Nếu là Tự luận, Giảng viên sẽ cập nhật field `score` cho từng object trong mảng.
+  ```json
+  {
+    "_id": "SubmissionID", // Sinh ra từ bảng Submissions (SQL)
+    "examId": "ExamID",
+    "studentId": "StudentID",
+    "answers": [
+      {
+        "questionId": 1,
+        "studentResponse": "A", // (MCQ) hoặc nội dung tự luận (Essay)
+        "isCorrect": true, // (MCQ) Hệ thống tự chấm
+        "score": 10 // (Essay) Teacher chấm điểm
+      }
+    ]
+  }
+  ```
 
-**Lưu ý:** Việc thêm field `groupId` (dù hơi dư thừa so với việc query ngược qua `examId`) là một kỹ thuật khử chuẩn giúp query phân tích điểm theo nhóm học nhanh hơn rất nhiều.
-
-## Chiến lược Tối ưu Hiệu năng (MongoDB)
-
-* **Compound Indexes:**
-  * Tạo index `{ groupId: 1, studentId: 1 }` trên collection `submissions` để truy xuất toàn bộ điểm của một sinh viên trong một nhóm cực kỳ nhanh chóng.
-  * Tạo index `{ groupId: 1, score: 1 }` trên `submissions` phục vụ cho việc tìm Top 10 điểm thấp nhất.
-* **Aggregation Pipeline cho Analytics:**
-  * **Top 10 nguy cơ:** Dùng `$match` lọc theo `groupId`, sau đó `$group` theo `studentId` để tính `$avg` score, cuối cùng `$sort` tăng dần và `$limit: 10`.
-  * **Phân tích độ khó câu hỏi:** Sử dụng `$unwind` mảng `answers` trong `submissions`, sau đó `$group` theo `questionId` để đếm tổng số lần trả lời và số lần `isCorrect: false`. Tính tỷ lệ phần trăm trực tiếp trong pipeline. Nhờ cấu trúc document, thao tác này chạy trực tiếp trên memory mà không cần Disk I/O nặng nề để join bảng.
+### Tối ưu Analytics (MongoDB)
+Để vẽ 2 biểu đồ cho Giảng viên trên `SCREEN.md` (**Average Score per Question** và **Question Performance**), hệ thống tận dụng **Aggregation Pipeline** trực tiếp trên collection `Submission_Answers` thay vì đè nặng lên SQL.
+* **Đối với MCQ (Question Performance):** Dùng `$match` theo `examId`, sau đó `$unwind` mảng `answers`, rồi `$group` theo `questionId` để đếm tổng số document có `isCorrect: true`.
+* **Đối với Essay (Average Score per Question):** Tương tự, `$unwind` mảng `answers`, `$group` theo `questionId` và dùng hàm `$avg` để tính điểm trung bình dựa trên field `score` mà giáo viên đã chấm.

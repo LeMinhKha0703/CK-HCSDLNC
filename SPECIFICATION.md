@@ -1,47 +1,63 @@
-# Tài liệu Đặc tả Hệ thống Quản lý Học tập & Kiểm tra (Advanced Database Systems)
+# Tài liệu Đặc tả Hệ thống Quản lý Học tập & Kiểm tra
 
-Tài liệu này quy định các chức năng cốt lõi cho hệ thống quản trị học tập, tập trung vào việc tương tác giữa Giảng viên, Sinh viên và quản trị viên hệ thống.
+Tài liệu này quy định các chức năng cốt lõi cho hệ thống quản trị học tập, phân chia quyền hạn rõ ràng dựa trên giao diện hiển thị của 3 vai trò: Sinh viên (Student), Giảng viên (Teacher) và Quản trị viên (Admin).
 
-## 1. Phân hệ Sinh viên (Student)
+## 1. Phân hệ Xác thực (Authentication)
+* **Login (`.../login`):** Đăng nhập bằng Email và Password.
+* **Register (`.../register`):** Đăng ký tài khoản mới (FullName, Email, Password). Có tùy chọn checkbox "I am a Teacher" để xác định vai trò, nếu không mặc định là Student.
+* **Logout (`.../logout`):** Đăng xuất và điều hướng về trang Login.
 
-* **Tạo tài khoản:** Người dùng đăng ký tài khoản mới trên hệ thống. Vai trò (Role) mặc định khi đăng ký thành công là **Sinh viên**.
-* **Quản lý lời mời:** * Nhận lời mời tham gia nhóm học từ Giảng viên thông qua phân hệ **Thông báo**.
-    * Sau khi chấp nhận, sinh viên có quyền truy cập vào các bài kiểm tra của nhóm đó.
-* **Tương tác Bài kiểm tra:**
-    * Thực hiện bài kiểm tra trắc nghiệm: Hệ thống tự động chấm điểm dựa trên đáp án đã thiết lập và lưu kết quả ngay lập tức.
-    * Thực hiện bài kiểm tra tự luận: Hệ thống ghi nhận bài làm; điểm số sẽ được cập nhật sau khi Giảng viên chấm thủ công.
-* **Theo dõi kết quả cá nhân:**
-    * Xem điểm trung bình (GPA) của từng nhóm học tham gia.
-    * Xem thứ hạng (Rank) của bản thân trong nhóm học đó.
-    * Xem chi tiết điểm của từng bài kiểm tra cụ thể khi nhấp vào điểm trung bình của nhóm.
+## 2. Phân hệ Sinh viên (Student)
+Giao diện mặc định sau khi đăng nhập là Dashboard nhóm học (`.../student/mygroups`).
 
-## 2. Phân hệ Giảng viên (Teacher)
+* **Quản lý Nhóm học:**
+  * Xem danh sách các nhóm đã tham gia (Tên nhóm, Tên giảng viên, Ngày tạo).
+  * Truy cập vào chi tiết nhóm học: Theo dõi tổng quan Điểm trung bình (Average Grade) của tất cả bài kiểm tra và Thứ hạng (Rank Position) của bản thân trong nhóm.
+* **Tương tác Bài kiểm tra (Exams):**
+  * Trong chi tiết nhóm, sinh viên xem danh sách các bài kiểm tra (Title, Type: Essay/MCQ, Hạn chót EndAt).
+  * **Trạng thái bài thi:**
+    * Chưa làm: Hiển thị nút **Do** để bắt đầu làm bài.
+    * Đã làm: Hiển thị **Final Score** (Điểm/10). Riêng tự luận chờ chấm sẽ hiển thị `_/10`.
+    * Quá hạn (EndAt): Chuyển trạng thái **Locked**.
+  * **Màn hình làm bài (`.../exams/essay` hoặc `.../exams/mcq`):**
+    * Cung cấp thanh điều hướng câu hỏi (Question Navigator) trên Sidebar.
+    * Hiển thị thời gian đếm ngược, nội dung câu hỏi.
+    * Trắc nghiệm (MCQ): Cung cấp các nút Radio để chọn đáp án. Tự luận (Essay): Cung cấp trường nhập văn bản.
+* **Thông báo (Notifications):**
+  * Xem danh sách thông báo gồm tiêu đề và nội dung.
+  * Hỗ trợ nút **Accept Invitation** trực tiếp trên thông báo loại mời vào nhóm. Sau khi chấp nhận sẽ tự động điều hướng vào nhóm đó.
 
-* **Tạo tài khoản:** Người dùng đăng ký tài khoản và tích chọn tùy chọn "Tôi là Giảng viên".
-* **Quản lý nhóm & Mời sinh viên:**
-    * Gửi lời mời trực tiếp cho sinh viên đã có trên hệ thống.
-    * Hỗ trợ nhập danh sách sinh viên hàng loạt thông qua tệp Excel (Định dạng: STT, Email đăng ký).
-* **Quản lý bài kiểm tra:**
-    * Khởi tạo bài kiểm tra mới với hai hình thức: Trắc nghiệm hoặc Tự luận.
-    * Đăng tải bài kiểm tra lên hệ thống cho các nhóm học tương ứng.
-* **Chấm điểm tự luận:** Truy cập vào danh sách bài làm tự luận của sinh viên, nhập điểm và lưu vào hệ thống.
-* **Phân tích và Giám sát:**
-    * **Xác định sinh viên có nguy cơ:** Truy cập bảng điểm trung bình toàn nhóm, hệ thống tự động lọc Top sinh viên có điểm thấp nhất (hiển thị dòng màu đỏ trên UI).
-    * **Phân tích độ khó:** Xem báo cáo về tỷ lệ thất bại (tỷ lệ trả lời sai) của từng câu hỏi cụ thể trong bài kiểm tra.
-    * **Xuất báo cáo:** Hỗ trợ xuất các danh sách điểm và báo cáo phân tích ra tệp Excel.
-* **Hỗ trợ giảng dạy:** Đăng tải tài liệu bổ trợ lên hệ thống dựa trên kết quả phân tích học tập của sinh viên.
+## 3. Phân hệ Giảng viên (Teacher)
+Giao diện mặc định sau khi đăng nhập là Quản lý Nhóm (`.../teacher/groupmanagement`).
 
-## 3. Phân hệ Quản trị viên (Admin)
+* **Quản lý Nhóm học (Group Management):**
+  * Thêm nhóm mới: Nhập tên nhóm, hỗ trợ **Upload Student List** qua tệp Excel (`.xlsx`) hoặc thêm thủ công bằng Email.
+  * Bảng thống kê danh sách nhóm: Tên nhóm, Tổng số sinh viên, Ngày tạo.
+  * Chi tiết nhóm (`.../teacher/group/{GroupName}`):
+    * Lọc nhanh danh sách sinh viên theo tiêu chí: **Grade < 5.0** và **Grade > 8.0**.
+    * Danh mục sinh viên (Student Directory): Hiển thị STT, Họ tên, Email, Điểm trung bình (Average Grade).
+    * Bổ sung sinh viên: Mời thêm sinh viên vào nhóm (Upload Excel hoặc Email).
+    * Tính năng **Export (Excel)**: Xuất toàn bộ danh sách, kèm các danh sách lọc (<5.0, >8.0).
+* **Quản lý Bài kiểm tra (Exam Management):**
+  * **Dashboard thống kê:** Xem tổng số lượng bài tập, tổng bài Trắc nghiệm (MCQ), tổng bài Tự luận (Essay).
+  * Khởi tạo bài kiểm tra (`.../teacher/createexam`): Chọn Tên nhóm (thuộc quản lý của Teacher), Loại bài (MCQ/Essay), Tổng số câu hỏi.
+  * Nhập nội dung câu hỏi: Nhập trực tiếp qua Form hoặc tải lên tệp Excel (hỗ trợ nhập cả câu hỏi, các đáp án và chỉ định đáp án đúng cho MCQ).
+* **Phân tích và Chấm điểm (Analytics & Grading):**
+  * Danh sách bài kiểm tra cho phép truy cập để xem chi tiết, xuất kết quả điểm ra tệp Excel.
+  * **Tự luận (Essay):**
+    * Xem biểu đồ **Average Score per Question**: Phân tích điểm trung bình của từng câu hỏi để đánh giá độ khó thực tế.
+    * Danh sách nộp bài (Pending, Graded, Locked).
+    * Hành động **Grade**: Chuyển đến màn hình chấm điểm, nhập điểm và lưu (Save Evaluation).
+    * Hành động **Review**: Xem lại điểm đã chấm.
+  * **Trắc nghiệm (MCQ):**
+    * Xem biểu đồ **Question Performance**: Thống kê số lượng sinh viên chọn đúng cho từng câu hỏi.
+    * Danh sách nộp bài (Pending, Graded, Locked).
+    * Hành động **Review**: Màn hình xem chi tiết kết quả sinh viên so với đáp án đúng.
 
-* **Thông tin đăng nhập mặc định:**
-    * **Tài khoản:** `Admin`
-    * **Mật khẩu:** `Admin`
-* **Quản lý người dùng:**
-    * Xem toàn bộ danh sách tài khoản trong hệ thống.
-    * Thực hiện các quyền quản trị cao nhất: Thêm mới, Sửa thông tin và Xóa tài khoản.
+## 4. Phân hệ Quản trị viên (Admin)
+Giao diện mặc định sau khi đăng nhập là Quản lý Người dùng (`.../admin/usermanagement`).
 
-## 4. Ghi chú Kỹ thuật (Gợi ý)
-
-* **Cơ sở dữ liệu:** * Sử dụng **SQL Server** để đảm bảo tính toàn vẹn dữ liệu (ACID) cho các giao dịch quan trọng như chấm điểm và quản lý người dùng.
-    * Sử dụng **MongoDB** cho các cấu trúc dữ liệu linh hoạt như nội dung bài kiểm tra (nhúng câu hỏi vào đề) và lưu trữ kết quả chi tiết để tối ưu tốc độ đọc/ghi.
-* **Kiến trúc:** Triển khai theo mô hình **Polyglot Persistence** để tận dụng thế mạnh của cả hai loại CSDL trong cùng một hệ thống quản lý học tập nâng cao.
+* **Quản lý Người dùng:**
+  * Tìm kiếm và lọc người dùng theo Role (Teacher, Student).
+  * **Tạo mới:** Màn hình `Create New User` (Họ tên, Email, Mật khẩu, System Role).
+  * **Danh sách User:** Hiển thị thông tin cơ bản. Cho phép Edit (Họ tên, Email, Role) và Delete tài khoản trực tiếp.

@@ -1,94 +1,201 @@
-//TEACHER
-import { useState } from 'react';
-import Sidebar from './components/sidebar/SideBar';
-import GroupManagement from './pages/teacher/GroupManagementPage';
-import ExamManagement from './pages/teacher/ExamManagementPage';
-// import './App.css';
+// src/App.tsx
+// Routing trung tâm - Khớp 100% với SCREEN.md
+import React from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
+import ProtectedRoute from './components/common/ProtectedRoute';
 
-
-//STUDENT
-import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-
+// ===== AUTH =====
 import AuthForm from './components/student/AuthForm';
+
+// ===== STUDENT (jsx → sẽ được chuyển tsx ở bước 3) =====
 import Dashboard from './components/student/Dashboard';
+import GroupDetail from './components/student/GroupDetail';
+import Notifications from './components/student/Notifications';
 import Quiz from './components/student/Quiz';
 import Essay from './components/student/Essay';
+
+// ===== TEACHER (đã là .tsx) =====
+import GroupManagement from './components/teacher/Group/GroupManagement';
+import GroupDetails from './components/teacher/Group/GroupDetails';
+import ExamManagement from './components/teacher/Exam/ExamManagement';
+import CreateExam from './components/teacher/Exam/CreateExam';
+import EssayDetails from './components/teacher/Essay/EssayDetails';
+import GradeEssay from './components/teacher/Essay/GradeEssay';
+import EssayStudentResult from './components/teacher/Essay/EssayStudentResult';
+import MCQDetails from './components/teacher/MCQ/MCQDetails';
+import MCQStudentResult from './components/teacher/MCQ/MCQStudentResult';
+import Sidebar from './components/sidebar/SideBar';
+
+// ===== ADMIN =====
 import Admin from './components/student/Admin';
 import CreateUser from './components/student/CreateUser';
-import DeleteUserModal from './components/student/DeleteUserModal';
-import GroupDetail from './components/student/GroupDetail'; 
-import Notifications from './components/student/Notifications'; // Import file thông báo của bạn
 
-const defaultUsers = [
-  { id: 'UID-90210', name: 'Julianne Davenport', email: 'j.davenport@editorial.com', role: 'Teacher', initial: 'JD', color: 'bg-[#b6c8fe] text-[#415382]' },
-  { id: 'UID-88432', name: 'Dr. Julian Vane', email: 'j.vane@analytics.edu', role: 'Teacher', initial: 'JV', color: 'bg-[#ffdbcf] text-[#380d00]' },
-  { id: 'UID-76511', name: 'Sarah Miller', email: 'sarah.m@analytics.edu', role: 'Teacher', initial: 'SL', color: 'bg-[#dae2ff] text-[#001848]' },
-  { id: 'UID-44321', name: 'Mark K.', email: 'm.kubiak@analytics.edu', role: 'Student', initial: 'MK', color: 'bg-[#e1e3e4] text-[#434654]' },
-];
+// Layout bọc Sidebar cho Teacher
+const TeacherLayout = ({ children }: { children: React.ReactNode }) => (
+  <div className="flex h-screen bg-[#f9f9fb] font-sans antialiased overflow-hidden">
+    <Sidebar type="teacher" />
+    <div className="flex-1 overflow-y-auto">
+      {children}
+    </div>
+  </div>
+);
+
+// Admin wrapper — quản lý state users nội bộ (sẽ thay bằng API ở Bước 4)
+const AdminPage = () => {
+  const [users, setUsers] = React.useState<{ id: string; name: string; email: string; role: string; initial: string; color: string }[]>([]);
+  return <Admin users={users} setUsers={setUsers} />;
+};
+const CreateUserPage = () => {
+  const [users, setUsers] = React.useState<{ id: string; name: string; email: string; role: string; initial: string; color: string }[]>([]);
+  return <CreateUser users={users} setUsers={setUsers} />;
+};
+
+
+// Layout bọc Sidebar cho Admin
+const AdminLayout = ({ children }: { children: React.ReactNode }) => (
+  <div className="flex h-screen bg-[#f9f9fb] font-sans antialiased overflow-hidden">
+    <Sidebar type="admin" />
+    <div className="flex-1 overflow-y-auto">
+      {children}
+    </div>
+  </div>
+);
+
+// Smart redirect sau khi đăng nhập dựa theo role
+const RoleRedirect = () => {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role === 'Teacher') return <Navigate to="/teacher/groupmanagement" replace />;
+  if (user.role === 'Admin') return <Navigate to="/admin/usermanagement" replace />;
+  return <Navigate to="/student/mygroups" replace />;
+};
 
 function App() {
-  //TEACHER
-  const [activeMenu, setActiveMenu] = useState('groups');
-
-  //STUDENT
-  const [users, setUsers] = useState(() => {
-    const saved = localStorage.getItem('students-admin-users');
-    if (!saved) return defaultUsers;
-    try {
-      return JSON.parse(saved);
-    } catch {
-      return defaultUsers;
-    }
-  });
-
-  //STUDENT
-  useEffect(() => {
-    localStorage.setItem('students-admin-users', JSON.stringify(users));
-  }, [users]);
-
   return (
+    <Routes>
+      {/* === REDIRECT ROOT === */}
+      <Route path="/" element={<RoleRedirect />} />
 
-    // <div className="flex h-screen bg-[#f9f9fb] font-sans antialiased overflow-hidden">
-    //   <Sidebar activeMenu={activeMenu} setActiveMenu={setActiveMenu} />
-    //   {activeMenu === 'groups' ? <GroupManagement /> : <ExamManagement />}
-    // </div>
-    
+      {/* === PUBLIC: Auth === */}
+      <Route path="/login" element={<AuthForm />} />
+      <Route path="/register" element={<AuthForm />} />
+      <Route path="/logout" element={<Navigate to="/login" replace />} />
 
-    <Router>
-      <Routes>
-        <Route path="/" element={<Navigate to="/login" />} />
-        <Route path="/login" element={<AuthForm />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/admin" element={<Admin users={users} setUsers={setUsers} />} />
-        <Route path="/notifications" element={<Notifications />} />
+      {/* === STUDENT Routes === */}
+      <Route path="/student/mygroups" element={
+        <ProtectedRoute allowedRoles={['Student']}>
+          <Dashboard />
+        </ProtectedRoute>
+      } />
+      <Route path="/student/group/:groupId" element={
+        <ProtectedRoute allowedRoles={['Student']}>
+          <GroupDetail />
+        </ProtectedRoute>
+      } />
+      <Route path="/student/notifications" element={
+        <ProtectedRoute allowedRoles={['Student']}>
+          <Notifications />
+        </ProtectedRoute>
+      } />
+      <Route path="/exams/mcq/:examId" element={
+        <ProtectedRoute allowedRoles={['Student']}>
+          <Quiz />
+        </ProtectedRoute>
+      } />
+      <Route path="/exams/essay/:examId" element={
+        <ProtectedRoute allowedRoles={['Student']}>
+          <Essay />
+        </ProtectedRoute>
+      } />
 
-        {/* Các trang hỗ trợ Admin như trong hình thiết kế */}
-        <Route path="/admin/create" element={<CreateUser users={users} setUsers={setUsers} />} />
-        <Route path="/admin/delete" element={<DeleteUserModal />} />
+      {/* === TEACHER Routes === */}
+      <Route path="/teacher/groupmanagement" element={
+        <ProtectedRoute allowedRoles={['Teacher']}>
+          <TeacherLayout>
+            <GroupManagement />
+          </TeacherLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/teacher/group/:groupId" element={
+        <ProtectedRoute allowedRoles={['Teacher']}>
+          <TeacherLayout>
+            <GroupDetails />
+          </TeacherLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/teacher/exammanagement" element={
+        <ProtectedRoute allowedRoles={['Teacher']}>
+          <TeacherLayout>
+            <ExamManagement />
+          </TeacherLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/teacher/createexam" element={
+        <ProtectedRoute allowedRoles={['Teacher']}>
+          <TeacherLayout>
+            <CreateExam onBack={() => window.history.back()} onCreateExam={() => {}} />
+          </TeacherLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/teacher/exams/essay/:examId" element={
+        <ProtectedRoute allowedRoles={['Teacher']}>
+          <TeacherLayout>
+            <EssayDetails />
+          </TeacherLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/teacher/exams/essay/:examId/grade/:submissionId" element={
+        <ProtectedRoute allowedRoles={['Teacher']}>
+          <TeacherLayout>
+            <GradeEssay />
+          </TeacherLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/teacher/exams/essay/:examId/review/:submissionId" element={
+        <ProtectedRoute allowedRoles={['Teacher']}>
+          <TeacherLayout>
+            <EssayStudentResult />
+          </TeacherLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/teacher/exams/mcq/:examId" element={
+        <ProtectedRoute allowedRoles={['Teacher']}>
+          <TeacherLayout>
+            <MCQDetails />
+          </TeacherLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/teacher/exams/mcq/:examId/review/:submissionId" element={
+        <ProtectedRoute allowedRoles={['Teacher']}>
+          <TeacherLayout>
+            <MCQStudentResult />
+          </TeacherLayout>
+        </ProtectedRoute>
+      } />
 
-        {/* Route Courses và Exams */}
-        <Route path="/courses/:courseName" element={<GroupDetail />} />
-        <Route path="/exams/quiz/:quizId" element={<Quiz />} /> 
-        <Route path="/exams/essay/:essayId" element={<Essay />} /> 
-        <Route path="/notifications" element={<Notifications />} />
+      {/* === ADMIN Routes === */}
+      <Route path="/admin/usermanagement" element={
+        <ProtectedRoute allowedRoles={['Admin']}>
+          <AdminPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/create" element={
+        <ProtectedRoute allowedRoles={['Admin']}>
+          <CreateUserPage />
+        </ProtectedRoute>
+      } />
 
-        {/* Teacher */}
-        <Route
-          path="/teacher"
-          element={
-            <div className="flex h-screen bg-[#f9f9fb] font-sans antialiased overflow-hidden">
-              <Sidebar activeMenu={activeMenu} setActiveMenu={setActiveMenu} type="teacher" />
-              {activeMenu === 'groups' ? <GroupManagement /> : <ExamManagement />}
-            </div>
-          }
-        />
-
-        {/* Route dự phòng */}
-        <Route path="/detail" element={<Navigate to="/dashboard" />} />
-        <Route path="*" element={<div className="p-20 text-center text-2xl">404 - Không tìm thấy trang</div>} />
-      </Routes>
-    </Router>
+      {/* === 404 FALLBACK === */}
+      <Route path="*" element={
+        <div className="flex items-center justify-center h-screen text-center">
+          <div>
+            <h1 className="text-6xl font-black text-slate-200">404</h1>
+            <p className="text-slate-500 mt-2">Không tìm thấy trang</p>
+          </div>
+        </div>
+      } />
+    </Routes>
   );
 }
 
