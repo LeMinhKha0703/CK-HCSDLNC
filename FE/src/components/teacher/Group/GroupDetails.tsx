@@ -5,7 +5,7 @@ import StatCard from './StatCard';
 import { TrendingUp, AlertTriangle, Star } from 'lucide-react';
 import InviteStudentsModal from './InviteStudentsModal';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getGroupStudents, inviteStudents } from '../../../api/teacher';
+import { getGroupDetail, inviteStudents } from '../../../api/teacher';
 
 export interface GroupStudent {
   id: string;
@@ -53,13 +53,10 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({ onBack, groupTitle, student
   const [displayedStudents, setDisplayedStudents] = useState<GroupStudent[]>(students ?? []);
   const [stats, setStats] = useState<GroupStats>({ totalStudents: 0, gradeLow: 0, gradeHigh: 0 });
   const [groupName, setGroupName] = useState(groupTitle || 'Group Details');
-  const [isLoading, setIsLoading] = useState(!students);
-
   useEffect(() => {
     if (groupId && !students) {
-      setIsLoading(true);
-      getGroupStudents(groupId)
-        .then(res => {
+      getGroupDetail(groupId)
+        .then((res: any) => {
           const data = res.data;
           setGroupName(data.groupName || 'Group Details');
           const mapped: GroupStudent[] = (data.students || []).map((s: { userId: string; fullName: string; email: string; averageGrade: number }, idx: number) => {
@@ -82,8 +79,7 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({ onBack, groupTitle, student
             gradeHigh: mapped.filter(s => parseFloat(s.averageGrade) > 8).length,
           });
         })
-        .catch(console.error)
-        .finally(() => setIsLoading(false));
+        .catch(console.error);
     } else if (students) {
       setDisplayedStudents(students);
       setStats({
@@ -99,7 +95,7 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({ onBack, groupTitle, student
       if (groupId) {
         await inviteStudents(groupId, studentEmails);
         // Reload sau khi invite thành công
-        const res = await getGroupStudents(groupId);
+        const res: any = await getGroupDetail(groupId);
         const data = res.data;
         const mapped: GroupStudent[] = (data.students || []).map((s: { userId: string; fullName: string; email: string; averageGrade: number }, idx: number) => {
           const grade = parseFloat(s.averageGrade?.toString() || '0');

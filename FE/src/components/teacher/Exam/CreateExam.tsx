@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, BookOpen, Trash2, GripVertical, Check, ChevronDown, Circle, Save, Send, Plus, Sparkles, Gauge } from 'lucide-react';
+import { ArrowLeft, BookOpen, Trash2, GripVertical, ChevronDown, Circle, Plus, Send } from 'lucide-react';
 
 interface CreateExamProps {
   onBack?: () => void;

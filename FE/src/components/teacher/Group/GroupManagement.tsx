@@ -45,9 +45,7 @@ const GroupManagement = () => {
     }
   };
 
-  if (selectedGroup) {
-    return <div className="text-center py-10 text-slate-400">Loading group {selectedGroup}...</div>;
-  }
+
 
   return (
       <div className="max-w-5xl mx-auto pt-6">

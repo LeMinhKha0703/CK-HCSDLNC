@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import * as XLSX from 'xlsx';
 import { ArrowLeft, Calendar, DownloadCloud } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from 'recharts';
 import { useNavigate, useParams } from 'react-router-dom';
 
 interface MCQDetailsProps {
@@ -30,21 +30,18 @@ const questionData = [
 ];
 
 const MCQDetails: React.FC<MCQDetailsProps> = ({ onBack, assignmentTitle }) => {
+  const totalStudents = mockSubmissions.length;
   const navigate = useNavigate();
   const { examId } = useParams();
-  const [reviewingStudent, setReviewingStudent] = useState<string | null>(null);
-  const totalStudents = mockSubmissions.length;
 
   const handleReview = (subId: string) => {
     if (examId) navigate(`/teacher/exams/mcq/${examId}/review/${subId}`);
-    else setReviewingStudent(subId);
   };
 
   const exportSubmissionsToExcel = () => {
     const worksheetData = mockSubmissions.map((submission) => ({
       STT: submission.stt,
       'Student Name': submission.name,
-      Status: submission.status,
       Score: submission.score,
     }));
 
@@ -53,10 +50,6 @@ const MCQDetails: React.FC<MCQDetailsProps> = ({ onBack, assignmentTitle }) => {
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Submissions');
     XLSX.writeFile(workbook, 'mcq-submissions.xlsx');
   };
-
-  if (reviewingStudent) {
-    return <MCQStudentResult studentName={reviewingStudent} onBack={() => setReviewingStudent(null)} />;
-  }
 
   return (
     <div className="max-w-6xl mx-auto pt-6">

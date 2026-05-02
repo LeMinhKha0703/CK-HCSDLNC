@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import * as XLSX from 'xlsx';
-import { Calendar, DownloadCloud, ArrowLeft, TrendingUp } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Calendar, DownloadCloud, ArrowLeft } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
 import { useNavigate, useParams } from 'react-router-dom';
 
 interface EssayDetailsProps {
@@ -10,42 +10,38 @@ interface EssayDetailsProps {
 }
 
 const mockSubmissions = [
-  { stt: '01', name: 'Alice Johnson', status: 'Graded', score: '8/10', action: 'Review', statusColor: 'bg-gray-200 text-gray-700' },
-  { stt: '02', name: 'Bob Smith', status: 'Submitted', score: '9/10', action: 'Grade', statusColor: 'bg-[#e0e7ff] text-[#1a38cf]' },
-  { stt: '03', name: 'Charlie Davis', status: 'Graded', score: '9/10', action: 'Review', statusColor: 'bg-gray-200 text-gray-700' },
-  { stt: '04', name: 'Diana Evans', status: 'Not Submitted', score: '_ / 10', action: '-', statusColor: 'bg-gray-100 text-gray-500' },
+  { stt: '01', name: 'Alexander Wright', status: 'Graded', score: '8.5', action: 'Review', statusColor: 'bg-gray-200 text-gray-700' },
+  { stt: '02', name: 'Benjamin Foster', status: 'Submitted', score: '-', action: 'Grade', statusColor: 'bg-[#e0e7ff] text-[#1a38cf]' },
+  { stt: '03', name: 'Chloe Simmons', status: 'Graded', score: '9.2', action: 'Review', statusColor: 'bg-gray-200 text-gray-700' },
+  { stt: '04', name: 'David Chen', status: 'Not Submitted', score: '-', action: '-', statusColor: 'bg-gray-100 text-gray-500' },
+  { stt: '05', name: 'Emma Thompson', status: 'Submitted', score: '-', action: 'Grade', statusColor: 'bg-[#e0e7ff] text-[#1a38cf]' },
 ];
 
-const questionCount = 10;
-const maxScorePerQuestion = 10 / questionCount;
-
-const averageScoreData = [
-  { question: 1, averageScore: 0.05 },
-  { question: 2, averageScore: 0.1 },
-  { question: 3, averageScore: 0.2 },
-  { question: 4, averageScore: 0.15 },
-  { question: 5, averageScore: 0.3 },
-  { question: 6, averageScore: 0.25 },
-  { question: 7, averageScore: 0.4 },
+const mockChartData = [
+  { question: 1, averageScore: 0.8 },
+  { question: 2, averageScore: 0.65 },
+  { question: 3, averageScore: 0.9 },
+  { question: 4, averageScore: 0.4 },
+  { question: 5, averageScore: 0.75 },
+  { question: 6, averageScore: 0.85 },
+  { question: 7, averageScore: 0.6 },
   { question: 8, averageScore: 0.35 },
   { question: 9, averageScore: 0.5 },
   { question: 10, averageScore: 0.45 },
 ];
 
+const maxScorePerQuestion = 1;
+
 const EssayDetails: React.FC<EssayDetailsProps> = ({ onBack, assignmentTitle }) => {
   const navigate = useNavigate();
   const { examId } = useParams();
-  const [gradingStudent, setGradingStudent] = useState<string | null>(null);
-  const [reviewStudent, setReviewStudent] = useState<string | null>(null);
 
   const handleGrade = (subId: string) => {
     if (examId) navigate(`/teacher/exams/essay/${examId}/grade/${subId}`);
-    else setGradingStudent(subId);
   };
 
   const handleReview = (subId: string) => {
     if (examId) navigate(`/teacher/exams/essay/${examId}/review/${subId}`);
-    else setReviewStudent(subId);
   };
 
   const exportSubmissionsToExcel = () => {
@@ -61,14 +57,6 @@ const EssayDetails: React.FC<EssayDetailsProps> = ({ onBack, assignmentTitle }) 
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Submissions');
     XLSX.writeFile(workbook, 'essay-submissions.xlsx');
   };
-
-  if (gradingStudent) {
-    return <GradeEssay studentName={gradingStudent} onBack={() => setGradingStudent(null)} />;
-  }
-
-  if (reviewStudent) {
-    return <EssayStudentResult studentName={reviewStudent} onBack={() => setReviewStudent(null)} />;
-  }
 
   return (
       <div className="max-w-6xl mx-auto pt-6">
@@ -114,7 +102,7 @@ const EssayDetails: React.FC<EssayDetailsProps> = ({ onBack, assignmentTitle }) 
 
             <div className="w-full h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={averageScoreData} margin={{ top: 20, right: 12, left: 0, bottom: 12 }}>
+                <BarChart data={mockChartData} margin={{ top: 20, right: 12, left: 0, bottom: 12 }}>
                   <CartesianGrid stroke="#e5e7eb" vertical={false} strokeDasharray="3 3" />
                   <XAxis dataKey="question" axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} label={{ value: 'Number of questions', position: 'bottom', offset: 0, fill: '#6b7280', fontSize: 12 }} />
                   <YAxis type="number" domain={[0, maxScorePerQuestion]} ticks={[0, maxScorePerQuestion]} axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} width={35} label={{ value: 'Average score', angle: -90, position: 'insideLeft', fill: '#6b7280', fontSize: 12 }}/>

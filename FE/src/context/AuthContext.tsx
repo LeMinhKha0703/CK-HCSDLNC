@@ -1,6 +1,7 @@
 // src/context/AuthContext.tsx
 // Context toàn cục lưu thông tin đăng nhập (token, role, user info)
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
+import type { ReactNode } from 'react';
 
 interface UserInfo {
   userId: string;

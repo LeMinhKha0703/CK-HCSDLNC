@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, CloudUpload, FileUp, XCircle } from 'lucide-react';
+import { X, FileUp, XCircle } from 'lucide-react';
 
 interface InviteStudentsModalProps {
   isOpen: boolean;
