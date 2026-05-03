@@ -87,7 +87,7 @@ const Admin: React.FC = () => {
       await deleteUser(selectedUser.id);
       fetchUsers();
     } catch (err) {
-      alert('Xóa user thất bại!');
+      alert('Failed to delete user!');
     } finally {
       setIsModalOpen(false);
     }
@@ -177,7 +177,7 @@ const Admin: React.FC = () => {
           </div>
 
           {isLoading ? (
-            <div className="text-center py-16 text-slate-400">Đang tải danh sách người dùng...</div>
+            <div className="text-center py-16 text-slate-400">Loading user list...</div>
           ) : (
             <>
               {/* Table */}

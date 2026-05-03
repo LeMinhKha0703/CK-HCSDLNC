@@ -25,7 +25,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 
 def hash_password(password: str) -> str:
-    """Hash mật khẩu bằng SHA-256 (đơn giản, đủ dùng cho demo)."""
+    """Hash mật khẩu bằng SHA-256 (đủ dùng cho demo)."""
     return hashlib.sha256(password.encode()).hexdigest()
 
 
@@ -43,9 +43,9 @@ def decode_token(token: str) -> dict:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload
     except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token đã hết hạn")
+        raise HTTPException(status_code=401, detail="Token has expired")
     except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Token không hợp lệ")
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 
 def get_current_user(
@@ -56,7 +56,7 @@ def get_current_user(
     payload = decode_token(token)
     user_id = payload.get("sub")
     if not user_id:
-        raise HTTPException(status_code=401, detail="Token không chứa user ID")
+        raise HTTPException(status_code=401, detail="Token does not contain a user ID")
 
     row = conn.execute(
         text("SELECT UserID, FullName, Email, Role FROM Users WHERE UserID = :uid"),
@@ -64,7 +64,7 @@ def get_current_user(
     ).fetchone()
 
     if not row:
-        raise HTTPException(status_code=401, detail="Người dùng không tồn tại")
+        raise HTTPException(status_code=401, detail="User not found")
 
     return {"user_id": str(row.UserID), "full_name": row.FullName, "email": row.Email, "role": row.Role}
 
@@ -73,6 +73,9 @@ def require_role(*roles: str):
     """Dependency factory: Kiểm tra user có thuộc role được phép không."""
     def checker(current_user: dict = Depends(get_current_user)):
         if current_user["role"] not in roles:
-            raise HTTPException(status_code=403, detail=f"Yêu cầu quyền: {', '.join(roles)}")
+            raise HTTPException(
+                status_code=403,
+                detail=f"Access denied. Required role(s): {', '.join(roles)}"
+            )
         return current_user
     return checker

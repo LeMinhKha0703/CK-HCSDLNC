@@ -28,7 +28,7 @@ const CreateUser: React.FC = () => {
       navigate('/admin/usermanagement');
     } catch (err: unknown) {
       const axErr = err as { response?: { data?: { detail?: string } } };
-      setError(axErr.response?.data?.detail || 'Tạo người dùng thất bại');
+      setError(axErr.response?.data?.detail || 'Failed to create user');
     } finally {
       setIsLoading(false);
     }
@@ -142,7 +142,7 @@ const CreateUser: React.FC = () => {
                 disabled={isLoading}
                 className="flex-1 bg-[#0052cc] text-white font-bold py-3 rounded-lg shadow-lg shadow-blue-500/20 text-sm hover:bg-blue-700 disabled:opacity-60 transition-colors"
               >
-                {isLoading ? 'Đang tạo...' : 'Create User'}
+                {isLoading ? 'Creating...' : 'Create User'}
               </button>
             </div>
           </form>

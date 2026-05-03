@@ -78,14 +78,7 @@ npm run dev
 - [x] **Teacher Module:** Giảng viên đã có thể tạo nhóm, mời sinh viên, tạo bài thi, và chấm bài. Tích hợp `Recharts` để vẽ biểu đồ phân tích năng lực sinh viên dựa trên dữ liệu thực.
 - [x] **Admin Module:** Admin đã có thể thao tác Quản lý User (CRUD), lọc theo Role, tạo tài khoản mới.
 
-## 5. Những việc CHƯA làm được & Cần cải tiến (What's Next / Improvements)
-- [ ] **Deployment (Triển khai):** Cấu hình `docker-compose.prod.yml` để build cả BE và FE, tích hợp Nginx làm Reverse Proxy để deploy lên production server (hoặc VPS).
-- [ ] **Stress Test (Kiểm thử tải):** Xây dựng script nạp hàng chục ngàn (10,000+) records bài thi. Mục tiêu để biểu diễn khả năng tối ưu query của `Indexed Views` bên SQL và `Aggregation Pipeline` bên Mongo.
-- [ ] **Advanced Analytics & Export:** Chức năng xuất báo cáo điểm số ra file PDF cho Admin/Teacher.
-- [ ] **AI Integration:** Tích hợp LLM API (như OpenAI) để gợi ý chấm điểm và nhận xét các bài luận (Essay) tự động giúp Giảng viên.
-- [ ] **Security Enhancement:** Bổ sung cơ chế Refresh Token cho JWT, thiết lập Rate Limiting bảo vệ API khỏi Brute Force.
-
-## 6. Lưu ý sống còn cho Agent tiếp theo (Crucial Notes for Next Agents)
+## 5. Lưu ý sống còn cho Agent tiếp theo (Crucial Notes for Next Agents)
 1. **Routing & Giao diện:** Mọi thay đổi URL hoặc thêm màn hình mới phải dựa trên và cập nhật đồng bộ vào `SCREEN.md`. Tuyệt đối không tự ý đẻ thêm Route ngoài luồng chuẩn.
 2. **TypeScript & Build Check:** Cấu hình `tsconfig.app.json` cực kỳ khắt khe (strict). Trước khi hoàn thành một logic trên Frontend, hãy chạy `npm run build` hoặc `npx tsc -b` trong thư mục `FE` để đảm bảo không để lại bất kỳ lỗi biên dịch nào.
 3. **Mật khẩu Database:** Khi tạo mới User trực tiếp vào SQL bằng Script, KHÔNG insert mật khẩu dạng plaintext. Luôn băm mật khẩu bằng logic băm SHA-256 được mô tả trong `BE/auth.py`.

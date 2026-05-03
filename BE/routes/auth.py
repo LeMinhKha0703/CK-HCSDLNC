@@ -1,5 +1,5 @@
 """
-routes/auth.py - API Đăng ký và Đăng nhập
+routes/auth.py - Register and Login API
 POST /api/auth/register
 POST /api/auth/login
 """
@@ -22,7 +22,7 @@ def register(body: RegisterRequest, conn=Depends(get_sql_conn)):
         {"email": body.email}
     ).fetchone()
     if existing:
-        raise HTTPException(status_code=400, detail="Email đã được đăng ký")
+        raise HTTPException(status_code=400, detail="Email is already registered")
 
     role = "Teacher" if body.isTeacher else "Student"
     hashed = hash_password(body.password)
@@ -35,7 +35,7 @@ def register(body: RegisterRequest, conn=Depends(get_sql_conn)):
         {"fullName": body.fullName, "email": body.email, "passwordHash": hashed, "role": role}
     )
     conn.commit()
-    return {"message": "Đăng ký thành công", "role": role}
+    return {"message": "Registration successful", "role": role}
 
 
 @router.post("/login")
@@ -53,7 +53,7 @@ def login(body: LoginRequest, conn=Depends(get_sql_conn)):
     ).fetchone()
 
     if not row:
-        raise HTTPException(status_code=401, detail="Email hoặc mật khẩu không đúng")
+        raise HTTPException(status_code=401, detail="Invalid email or password")
 
     token = create_access_token({"sub": str(row.UserID)})
     return {

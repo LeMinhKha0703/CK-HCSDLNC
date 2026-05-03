@@ -1,6 +1,11 @@
 """
-routes/teacher.py - Toàn bộ API dành cho Teacher
-Bao gồm Polyglot Persistence route: Tạo bài thi (SQL + MongoDB)
+routes/teacher.py - All APIs for Teacher role
+
+Advanced DB Integration:
+  - GET /groups/{id} : Dùng vw_StudentRankInGroup (Window Function + CTE)
+  - POST /groups/{id}/invite : Chuẩn hóa lỗi từ DB để test tốt bằng Postman
+  - POST /exams : [POLYGLOT] Rollback SQL nếu MongoDB lỗi
+  - POST /exams/{id}/submissions/{id}/grade : [POLYGLOT] Cập nhật cả hai DB
 """
 import uuid
 from fastapi import APIRouter, Depends, HTTPException
@@ -74,7 +79,7 @@ def create_group(
     """Tạo nhóm học mới, có thể kèm danh sách email sinh viên."""
     uid = current_user["user_id"]
 
-    # Tạo nhóm
+    # Tạo nhóm (TotalStudent bắt đầu từ 0, Trigger sẽ tự cập nhật khi insert Group_Students)
     result = conn.execute(text("""
         INSERT INTO Groups (TeacherID, GroupName, TotalStudent)
         OUTPUT INSERTED.GroupID
@@ -83,14 +88,15 @@ def create_group(
     conn.commit()
     group_id = str(result.fetchone().GroupID)
 
-    # Mời sinh viên nếu có
+    # Gửi lời mời sinh viên nếu có danh sách email
     invited = 0
     for email in (body.studentEmails or []):
-        _invite_student_by_email(email, group_id, conn)
+        _invite_student_by_email(email, group_id, conn, group_name=body.groupName)
         invited += 1
+    conn.commit()
 
     return {
-        "message": "Tạo nhóm thành công",
+        "message": "Group created successfully",
         "groupId": group_id,
         "invitedCount": invited
     }
@@ -102,35 +108,36 @@ def get_group_detail(
     current_user=Depends(_teacher),
     conn=Depends(get_sql_conn)
 ):
-    """Chi tiết nhóm: danh sách sinh viên kèm điểm trung bình. Lọc <5.0 và >8.0."""
+    """
+    Chi tiết nhóm: danh sách sinh viên kèm điểm trung bình. Lọc <5.0 và >8.0.
+    [ADVANCED DB] Dùng Table-Valued Function fn_GetGroupLeaderboard
+    để lấy AverageGrade chính xác và RankPosition cho mỗi sinh viên.
+    """
     uid = current_user["user_id"]
 
-    # Kiểm tra quyền sở hữu
+    # Kiểm tra quyền sở hữu nhóm
     owner = conn.execute(text("""
         SELECT GroupName, TotalStudent FROM Groups WHERE GroupID = :gid AND TeacherID = :tid
     """), {"gid": group_id, "tid": uid}).fetchone()
     if not owner:
-        raise HTTPException(status_code=403, detail="Không có quyền truy cập nhóm này")
+        raise HTTPException(status_code=403, detail="Access denied: you do not own this group")
 
-    # Danh sách sinh viên + điểm trung bình
+    # [ADVANCED DB] Dùng fn_GetGroupLeaderboard (Table-Valued Function)
+    # Hàm này tích hợp CTE + Scalar UDF + Window Function RANK() nội bộ
     rows = conn.execute(text("""
-        SELECT u.UserID, u.FullName, u.Email,
-               CASE WHEN v.GradedExamsCount > 0 
-                    THEN CAST(v.TotalScoreSum / v.GradedExamsCount AS DECIMAL(5,2))
-                    ELSE NULL END AS AverageGrade
-        FROM Group_Students gs
-        JOIN Users u ON gs.StudentID = u.UserID
-        LEFT JOIN dbo.vw_StudentGroupScore v ON v.GroupID = gs.GroupID AND v.StudentID = gs.StudentID
-        WHERE gs.GroupID = :gid
-        ORDER BY AverageGrade DESC
+        SELECT lb.StudentID, u.Email, lb.FullName, lb.AverageGrade, lb.RankPosition
+        FROM dbo.fn_GetGroupLeaderboard(:gid) lb
+        JOIN Users u ON lb.StudentID = u.UserID
+        ORDER BY lb.RankPosition
     """), {"gid": group_id}).fetchall()
 
     students = [
         {
-            "studentId": str(r.UserID),
+            "studentId": str(r.StudentID),
             "fullName": r.FullName,
             "email": r.Email,
-            "averageGrade": float(r.AverageGrade) if r.AverageGrade else None
+            "averageGrade": float(r.AverageGrade) if r.AverageGrade is not None else None,
+            "rankPosition": r.RankPosition
         }
         for r in rows
     ]
@@ -161,7 +168,7 @@ def invite_students(
         SELECT GroupName FROM Groups WHERE GroupID = :gid AND TeacherID = :tid
     """), {"gid": group_id, "tid": uid}).fetchone()
     if not owner:
-        raise HTTPException(status_code=403, detail="Không có quyền trên nhóm này")
+        raise HTTPException(status_code=403, detail="Access denied: you do not own this group")
 
     invited, not_found = [], []
     for email in body.studentEmails:
@@ -180,20 +187,20 @@ def _invite_student_by_email(email: str, group_id: str, conn, group_name: str = 
     if not student:
         return False
 
-    # Kiểm tra đã trong nhóm chưa
+    # Kiểm tra đã trong nhóm chưa (bỏ qua, không gửi lời mời trùng)
     already = conn.execute(text("""
         SELECT 1 FROM Group_Students WHERE GroupID = :gid AND StudentID = :uid
     """), {"gid": group_id, "uid": str(student.UserID)}).fetchone()
     if already:
-        return True  # Coi như thành công
+        return True  # Coi như thành công, không gửi thêm
 
     conn.execute(text("""
         INSERT INTO Notifications (UserID, Title, Content, Type, TargetID)
         VALUES (:uid, :title, :content, 'Invite_Group', :tid)
     """), {
         "uid": str(student.UserID),
-        "title": f"Lời mời tham gia nhóm {group_name}",
-        "content": f"Bạn được mời tham gia nhóm học '{group_name}'. Nhấn Accept để xác nhận.",
+        "title": f"Group Invitation: {group_name}",
+        "content": f"You have been invited to join the group '{group_name}'. Click Accept to confirm.",
         "tid": group_id
     })
     return True
@@ -249,7 +256,7 @@ async def create_exam(
         SELECT 1 FROM Groups WHERE GroupID = :gid AND TeacherID = :tid
     """), {"gid": body.groupId, "tid": uid}).fetchone()
     if not owner:
-        raise HTTPException(status_code=403, detail="Không có quyền tạo bài thi cho nhóm này")
+        raise HTTPException(status_code=403, detail="Access denied: you do not own this group")
 
     total_questions = len(body.questions)
 
@@ -288,13 +295,13 @@ async def create_exam(
             "questions": questions_data
         })
     except Exception as e:
-        # Rollback: xóa exam khỏi SQL nếu Mongo lỗi
+        # Rollback: xóa exam khỏi SQL nếu MongoDB lỗi
         conn.execute(text("DELETE FROM Exams WHERE ExamID = :eid"), {"eid": exam_id})
         conn.commit()
-        raise HTTPException(status_code=500, detail=f"Lỗi lưu câu hỏi vào MongoDB, đã rollback: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to save questions to MongoDB. SQL rolled back: {str(e)}")
 
     return {
-        "message": "Tạo bài kiểm tra thành công",
+        "message": "Exam created successfully",
         "examId": exam_id,
         "totalQuestions": total_questions
     }
@@ -320,7 +327,7 @@ async def get_exam_detail(
         WHERE e.ExamID = :eid AND g.TeacherID = :tid
     """), {"eid": exam_id, "tid": uid}).fetchone()
     if not exam:
-        raise HTTPException(status_code=404, detail="Bài thi không tồn tại")
+        raise HTTPException(status_code=404, detail="Exam not found")
 
     # Danh sách bài nộp
     subs = conn.execute(text("""
@@ -330,10 +337,10 @@ async def get_exam_detail(
         ORDER BY s.SubmitedAt
     """), {"eid": exam_id}).fetchall()
 
-    # MongoDB Aggregation để lấy data biểu đồ
+    # [ADVANCED DB] MongoDB Aggregation Pipeline để lấy data biểu đồ
     chart_data = []
     if exam.Type == "MCQ":
-        # Question Performance: đếm số đúng / sai theo từng câu
+        # Question Performance: đếm số đúng theo từng câu
         pipeline = [
             {"$match": {"examId": exam_id}},
             {"$unwind": "$answers"},
@@ -399,7 +406,7 @@ async def get_submission_detail(
     """Xem chi tiết bài làm của một sinh viên từ MongoDB."""
     uid = current_user["user_id"]
 
-    # Kiểm tra quyền
+    # Kiểm tra quyền và lấy thông tin submission
     sub = conn.execute(text("""
         SELECT s.SubmissionID, u.FullName, s.Status, s.TotalScore, s.SubmitedAt, e.Type
         FROM Submissions s
@@ -410,7 +417,7 @@ async def get_submission_detail(
     """), {"sid": submission_id, "eid": exam_id, "tid": uid}).fetchone()
 
     if not sub:
-        raise HTTPException(status_code=404, detail="Không tìm thấy bài nộp")
+        raise HTTPException(status_code=404, detail="Submission not found")
 
     # Lấy câu hỏi từ Exam_Questions để hiển thị nội dung
     exam_doc = await mongo["Exam_Questions"].find_one({"_id": exam_id})
@@ -468,13 +475,13 @@ async def grade_submission(
     """), {"sid": submission_id, "eid": exam_id, "tid": uid}).fetchone()
 
     if not sub:
-        raise HTTPException(status_code=404, detail="Không tìm thấy bài tự luận cần chấm")
+        raise HTTPException(status_code=404, detail="Essay submission not found or already graded")
 
     # Bước 1: Cập nhật score từng câu vào MongoDB
     grade_map = {g.questionId: g.score for g in body.grades}
     ans_doc = await mongo["Submission_Answers"].find_one({"_id": submission_id})
     if not ans_doc:
-        raise HTTPException(status_code=404, detail="Không tìm thấy chi tiết bài làm trong MongoDB")
+        raise HTTPException(status_code=404, detail="Submission answers not found in MongoDB")
 
     updated_answers = []
     for a in ans_doc.get("answers", []):
@@ -496,4 +503,4 @@ async def grade_submission(
     """), {"score": total_score, "sid": submission_id})
     conn.commit()
 
-    return {"message": "Chấm điểm thành công", "totalScore": total_score}
+    return {"message": "Grading saved successfully", "totalScore": total_score}

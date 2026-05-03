@@ -1,25 +1,29 @@
 // src/components/student/Notifications.tsx
+// Student Notifications screen
+// Tích hợp Toast để hiển thị lỗi từ sp_AcceptGroupInvitation (RAISERROR → HTTP 400)
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { StudentSidebar } from './Dashboard';
 import { getNotifications, acceptInvitation } from '../../api/student';
+import { ToastContainer, useToast } from '../common/Toast';
 
 interface Notification {
-  id: string;
-  type: string;
+  notifId: string;
+  type: string;       // 'Invite_Group' | 'Normal'
   title: string;
-  date: string;
+  sendDate: string;
   content: string;
-  icon: string;
-  hasAction: boolean;
+  isRead: boolean;
+  targetId: string | null;
+  hasAction?: boolean;
 }
 
 const Notifications: React.FC = () => {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const { toasts, addToast, removeToast } = useToast();
 
   useEffect(() => {
     fetchNotifications();
@@ -29,27 +33,35 @@ const Notifications: React.FC = () => {
     setIsLoading(true);
     getNotifications()
       .then(res => setNotifications(res.data))
-      .catch(() => setError('Không thể tải thông báo'))
+      .catch(() => addToast('Failed to load notifications.', 'error'))
       .finally(() => setIsLoading(false));
   };
 
-  const handleAccept = async (notifId: string) => {
-    setProcessingId(notifId);
+  const handleAccept = async (notif: Notification) => {
+    setProcessingId(notif.notifId);
     try {
-      await acceptInvitation(notifId);
-      alert('Đã tham gia nhóm thành công!');
-      fetchNotifications(); // Reload danh sách thông báo
-      navigate('/student/mygroups'); // Chuyển về Dashboard để thấy nhóm mới
-    } catch (err) {
-      alert('Lỗi khi tham gia nhóm');
+      const res = await acceptInvitation(notif.notifId);
+      // Thành công → SP sp_AcceptGroupInvitation đã COMMIT transaction
+      addToast('Successfully joined the group!', 'success');
+      fetchNotifications(); // Reload danh sách thông báo (IsRead sẽ = 1)
+      // Điều hướng vào nhóm mới sau 1.2s (để user thấy toast)
+      if (res.data?.groupId) {
+        setTimeout(() => navigate(`/student/group/${res.data.groupId}`), 1200);
+      }
+    } catch (err: unknown) {
+      // Lỗi từ SP (RAISERROR) đã được BE parse thành HTTP 400/404 với message rõ ràng
+      const axiosErr = err as { response?: { data?: { detail?: string } } };
+      const msg = axiosErr?.response?.data?.detail || 'Failed to join the group. Please try again.';
+      addToast(msg, 'error');
     } finally {
       setProcessingId(null);
     }
   };
 
+  const getIcon = (type: string) => type === 'Invite_Group' ? 'group_add' : 'notifications';
+
   return (
     <div className="bg-[#f8f9fa] text-[#191c1d] font-body antialiased flex min-h-screen">
-      {/* SideNavBar */}
       <StudentSidebar />
 
       <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
@@ -60,45 +72,61 @@ const Notifications: React.FC = () => {
             <hr className="border-[#c3c6d6]/30 mt-6"/>
           </section>
 
-          {isLoading && <div className="text-center py-10 text-slate-400">Đang tải thông báo...</div>}
-          {error && <div className="text-center py-10 text-red-500">{error}</div>}
+          {isLoading && (
+            <div className="text-center py-10 text-slate-400">Loading notifications...</div>
+          )}
 
-          {!isLoading && !error && notifications.length === 0 && (
+          {!isLoading && notifications.length === 0 && (
             <div className="text-center py-20 text-slate-400">
               <span className="material-symbols-outlined text-6xl block mb-4">notifications_off</span>
-              Bạn không có thông báo nào.
+              You have no notifications.
             </div>
           )}
 
           {/* Feed */}
           <div className="space-y-6">
             {notifications.map((note) => (
-              <div key={note.id} className="group relative bg-white border border-[#c3c6d6]/20 rounded-xl p-6 transition-all hover:shadow-md shadow-sm">
+              <div
+                key={note.notifId}
+                className={`group relative bg-white border rounded-xl p-6 transition-all hover:shadow-md shadow-sm ${note.isRead ? 'border-[#c3c6d6]/20' : 'border-[#003d9b]/30 bg-blue-50/30'}`}
+              >
+                {/* Unread indicator */}
+                {!note.isRead && (
+                  <span className="absolute top-4 right-4 w-2.5 h-2.5 rounded-full bg-[#003d9b]" />
+                )}
+
                 <div className="flex gap-6">
                   <div className="flex-shrink-0">
-                    <div className={`h-14 w-14 rounded-full flex items-center justify-center text-white ${note.type === 'invite' ? 'bg-gradient-to-br from-[#003d9b] to-[#0052cc]' : 'bg-slate-200 text-slate-600'}`}>
-                      <span className="material-symbols-outlined text-2xl">{note.icon || 'notifications'}</span>
+                    <div className={`h-14 w-14 rounded-full flex items-center justify-center text-white ${note.type === 'Invite_Group' ? 'bg-gradient-to-br from-[#003d9b] to-[#0052cc]' : 'bg-slate-200 text-slate-600'}`}>
+                      <span className="material-symbols-outlined text-2xl">{getIcon(note.type)}</span>
                     </div>
                   </div>
                   <div className="flex-1">
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="font-headline text-xl font-bold">{note.title}</h3>
                       <span className="text-xs text-slate-400 font-medium">
-                        {new Date(note.date).toLocaleString('vi-VN')}
+                        {new Date(note.sendDate).toLocaleString('en-US')}
                       </span>
                     </div>
-                    <div 
-                      className="text-slate-600 leading-relaxed text-lg mb-6"
-                      dangerouslySetInnerHTML={{ __html: note.content }}
-                    />
-                    {note.hasAction && note.type === 'invite' && (
-                      <button 
-                        onClick={() => handleAccept(note.id)}
-                        disabled={processingId === note.id}
+                    <p className="text-slate-600 leading-relaxed text-base mb-6">{note.content}</p>
+
+                    {/* Accept button — chỉ hiện cho loại Invite_Group chưa đọc */}
+                    {note.type === 'Invite_Group' && !note.isRead && (
+                      <button
+                        onClick={() => handleAccept(note)}
+                        disabled={processingId === note.notifId}
                         className="bg-gradient-to-r from-[#003d9b] to-[#0052cc] text-white px-8 py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-500/20 active:scale-95 transition-all disabled:opacity-60"
                       >
-                        {processingId === note.id ? 'Đang xử lý...' : 'Accept Invitation'}
+                        {processingId === note.notifId ? 'Processing...' : 'Accept Invitation'}
                       </button>
+                    )}
+
+                    {/* Đã chấp nhận → hiện badge */}
+                    {note.type === 'Invite_Group' && note.isRead && (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full">
+                        <span className="material-symbols-outlined text-sm">check_circle</span>
+                        Joined
+                      </span>
                     )}
                   </div>
                 </div>
@@ -117,6 +145,8 @@ const Notifications: React.FC = () => {
           )}
         </main>
       </div>
+
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div>
   );
 };

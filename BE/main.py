@@ -1,3 +1,6 @@
+"""
+main.py - FastAPI Application Entry Point
+"""
 import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
@@ -12,21 +15,21 @@ load_dotenv()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Kết nối MongoDB
+    # Startup: kết nối MongoDB
     client = AsyncIOMotorClient(os.getenv("MONGODB_URL"))
     init_mongo(client)
     db = client[os.getenv("MONGODB_DATABASE")]
     await db.command("ping")
-    print("✅ Đã kết nối thành công tới MongoDB")
+    print("✅ MongoDB connection established successfully")
     yield
-    # Shutdown
+    # Shutdown: đóng kết nối
     client.close()
-    print("Đã đóng kết nối MongoDB")
+    print("MongoDB connection closed")
 
 app = FastAPI(
     title="E-Learning Analytics API",
-    description="Backend API hệ thống quản lý học tập - Polyglot Persistence (SQL Server + MongoDB)",
-    version="1.0.0",
+    description="Backend API for E-Learning Management System - Polyglot Persistence (SQL Server + MongoDB)",
+    version="2.0.0",
     lifespan=lifespan
 )
 

@@ -41,9 +41,9 @@ const AuthForm: React.FC = () => {
       else navigate('/student/mygroups');
     } catch (err) {
       if (axios.isAxiosError(err)) {
-        setError(err.response?.data?.detail || 'Email hoặc mật khẩu không đúng');
+        setError(err.response?.data?.detail || 'Incorrect email or password');
       } else {
-        setError('Lỗi kết nối server');
+        setError('Server connection error');
       }
     } finally {
       setIsLoading(false);
@@ -54,7 +54,7 @@ const AuthForm: React.FC = () => {
     e.preventDefault();
     setError('');
     if (regPassword !== regConfirm) {
-      setError('Mật khẩu xác nhận không khớp');
+      setError('Passwords do not match');
       return;
     }
     setIsLoading(true);
@@ -65,9 +65,9 @@ const AuthForm: React.FC = () => {
       setLoginEmail(regEmail);
     } catch (err) {
       if (axios.isAxiosError(err)) {
-        setError(err.response?.data?.detail || 'Đăng ký thất bại');
+        setError(err.response?.data?.detail || 'Registration failed');
       } else {
-        setError('Lỗi kết nối server');
+        setError('Server connection error');
       }
     } finally {
       setIsLoading(false);
@@ -166,7 +166,7 @@ const AuthForm: React.FC = () => {
                   disabled={isLoading}
                   className={`w-full ${signatureGradient} text-white font-headline font-bold py-4 rounded-lg shadow-md hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-60`}
                 >
-                  {isLoading ? 'Đang đăng nhập...' : 'Login'}
+                  {isLoading ? 'Logging in...' : 'Login'}
                 </button>
               </form>
             ) : (
@@ -235,7 +235,7 @@ const AuthForm: React.FC = () => {
                   disabled={isLoading}
                   className={`w-full ${signatureGradient} text-white font-headline font-bold py-4 rounded-lg shadow-md hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-60`}
                 >
-                  {isLoading ? 'Đang đăng ký...' : 'Register'}
+                  {isLoading ? 'Registering...' : 'Register'}
                 </button>
               </form>
             )}

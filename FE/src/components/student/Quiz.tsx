@@ -38,7 +38,7 @@ const Quiz: React.FC = () => {
     if (!examId) return;
     getExamContent(examId)
       .then(res => setExam(res.data))
-      .catch(() => setError('Không thể tải nội dung bài kiểm tra'))
+      .catch(() => setError('Failed to load exam content'))
       .finally(() => setIsLoading(false));
   }, [examId]);
 
@@ -60,7 +60,7 @@ const Quiz: React.FC = () => {
 
   const handleSubmit = async () => {
     if (!examId || !exam) return;
-    if (!window.confirm('Bạn có chắc chắn muốn nộp bài?')) return;
+    if (!window.confirm('Are you sure you want to submit?')) return;
     
     setIsSubmitting(true);
     try {
@@ -69,18 +69,18 @@ const Quiz: React.FC = () => {
         studentResponse: ans,
       }));
       await submitExam(examId, { answers: answersPayload });
-      alert('Nộp bài thành công!');
-      navigate(-1); // Quay lại trang trước đó
+      alert('Exam submitted successfully!');
+      navigate(-1); // Go back to previous page
     } catch (err) {
-      alert('Lỗi nộp bài!');
+      alert('Failed to submit exam!');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (isLoading) return <div className="text-center py-20">Đang tải bài thi...</div>;
+  if (isLoading) return <div className="text-center py-20">Loading exam...</div>;
   if (error) return <div className="text-center py-20 text-red-500">{error}</div>;
-  if (!exam || exam.questions.length === 0) return <div className="text-center py-20">Không có câu hỏi nào.</div>;
+  if (!exam || exam.questions.length === 0) return <div className="text-center py-20">No questions available.</div>;
 
   const currentQuestion = exam.questions[currentQuestionIndex];
 

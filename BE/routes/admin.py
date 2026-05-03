@@ -1,6 +1,6 @@
 """
-routes/admin.py - Toàn bộ API dành cho Admin
-Quản lý CRUD Users với quyền cao nhất.
+routes/admin.py - All APIs for Admin role
+CRUD Users with highest privilege.
 """
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import text
@@ -54,14 +54,14 @@ def create_user(
 ):
     """Admin tạo tài khoản mới."""
     if body.role not in ("Student", "Teacher", "Admin"):
-        raise HTTPException(status_code=400, detail="Role không hợp lệ")
+        raise HTTPException(status_code=400, detail="Invalid role. Must be 'Student', 'Teacher', or 'Admin'")
 
     existing = conn.execute(
         text("SELECT UserID FROM Users WHERE Email = :email"),
         {"email": body.email}
     ).fetchone()
     if existing:
-        raise HTTPException(status_code=400, detail="Email đã tồn tại")
+        raise HTTPException(status_code=400, detail="Email already exists")
 
     conn.execute(text("""
         INSERT INTO Users (FullName, Email, PasswordHash, Role)
@@ -73,7 +73,7 @@ def create_user(
         "role": body.role
     })
     conn.commit()
-    return {"message": f"Tạo tài khoản {body.email} thành công"}
+    return {"message": f"User '{body.email}' created successfully"}
 
 
 @router.put("/users/{user_id}")
@@ -94,16 +94,16 @@ def update_user(
         params["email"] = body.email
     if body.role:
         if body.role not in ("Student", "Teacher", "Admin"):
-            raise HTTPException(status_code=400, detail="Role không hợp lệ")
+            raise HTTPException(status_code=400, detail="Invalid role. Must be 'Student', 'Teacher', or 'Admin'")
         sets.append("Role = :role")
         params["role"] = body.role
 
     if not sets:
-        raise HTTPException(status_code=400, detail="Không có trường nào để cập nhật")
+        raise HTTPException(status_code=400, detail="No fields provided to update")
 
     conn.execute(text(f"UPDATE Users SET {', '.join(sets)} WHERE UserID = :uid"), params)
     conn.commit()
-    return {"message": "Cập nhật thành công"}
+    return {"message": "User updated successfully"}
 
 
 @router.delete("/users/{user_id}")
@@ -114,7 +114,7 @@ def delete_user(
 ):
     """Xóa tài khoản User."""
     if user_id == current_user["user_id"]:
-        raise HTTPException(status_code=400, detail="Không thể tự xóa tài khoản của mình")
+        raise HTTPException(status_code=400, detail="You cannot delete your own account")
 
     result = conn.execute(
         text("DELETE FROM Users WHERE UserID = :uid"),
@@ -123,6 +123,6 @@ def delete_user(
     conn.commit()
 
     if result.rowcount == 0:
-        raise HTTPException(status_code=404, detail="User không tồn tại")
+        raise HTTPException(status_code=404, detail="User not found")
 
-    return {"message": "Xóa tài khoản thành công"}
+    return {"message": "User deleted successfully"}

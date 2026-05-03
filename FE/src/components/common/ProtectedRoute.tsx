@@ -13,7 +13,7 @@ const ProtectedRoute = ({ children, allowedRoles }: Props) => {
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-screen text-slate-400">Đang tải...</div>;
+    return <div className="flex items-center justify-center h-screen text-slate-400">Loading...</div>;
   }
 
   if (!user) {

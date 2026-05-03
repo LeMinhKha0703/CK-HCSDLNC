@@ -41,7 +41,7 @@ const GroupManagement = () => {
       await createGroup({ groupName, studentEmails });
       fetchGroups();
     } catch (err) {
-      alert('Tạo nhóm thất bại!');
+      alert('Failed to create group!');
     }
   };
 
@@ -66,11 +66,11 @@ const GroupManagement = () => {
         <div className="w-full h-[1px] bg-gray-200 mb-8"></div>
 
         {isLoading ? (
-          <div className="text-center py-10 text-slate-400">Đang tải danh sách nhóm...</div>
+          <div className="text-center py-10 text-slate-400">Loading groups...</div>
         ) : (
           <div className="space-y-4">
             {apiGroups.length === 0 && (
-              <div className="text-center py-10 text-slate-400">Bạn chưa có nhóm nào. Tạo nhóm đầu tiên!</div>
+              <div className="text-center py-10 text-slate-400">You don't have any groups yet. Create your first group!</div>
             )}
             {apiGroups.map((group, idx) => (
               <GroupCard

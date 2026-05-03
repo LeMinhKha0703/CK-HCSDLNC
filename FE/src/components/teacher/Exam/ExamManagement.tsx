@@ -141,9 +141,9 @@ const ExamManagement = () => {
                </thead>
                <tbody className="divide-y divide-gray-50">
                  {isLoading ? (
-                   <tr><td colSpan={5} className="text-center py-8 text-slate-400">Đang tải...</td></tr>
+                   <tr><td colSpan={5} className="text-center py-8 text-slate-400">Loading...</td></tr>
                  ) : visibleAssignments.length === 0 ? (
-                   <tr><td colSpan={5} className="text-center py-8 text-slate-400">Chưa có bài kiểm tra nào</td></tr>
+                   <tr><td colSpan={5} className="text-center py-8 text-slate-400">No exams available</td></tr>
                  ) : visibleAssignments.map((assignment, idx) => (
                   <tr 
                     key={idx} 

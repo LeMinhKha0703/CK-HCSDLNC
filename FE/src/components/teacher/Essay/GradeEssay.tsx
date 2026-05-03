@@ -46,7 +46,7 @@ const GradeEssay: React.FC<GradeEssayProps> = ({ onBack, studentName }) => {
       return;
     }
     if (!score.trim()) {
-      alert('Vui lòng nhập điểm trước khi lưu');
+      alert('Please enter a grade before saving');
       return;
     }
     setIsSaving(true);
@@ -54,10 +54,10 @@ const GradeEssay: React.FC<GradeEssayProps> = ({ onBack, studentName }) => {
       await gradeSubmission(examId, submissionId, {
         grades: [{ questionId: currentQuestionId, score: parseFloat(score) }]
       });
-      alert('Đã lưu điểm thành công!');
+      alert('Grade saved successfully!');
       navigate(-1);
     } catch (err) {
-      alert('Lỗi khi lưu điểm!');
+      alert('Failed to save grade!');
     } finally {
       setIsSaving(false);
     }

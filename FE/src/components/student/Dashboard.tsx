@@ -1,9 +1,10 @@
 // src/components/student/Dashboard.tsx
-// Màn hình My Groups - Student Dashboard
+// Student Dashboard — My Groups screen
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { getMyGroups } from '../../api/student';
+import { ToastContainer, useToast } from '../common/Toast';
 
 interface Group {
   groupId: string;
@@ -64,12 +65,12 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const [groups, setGroups] = useState<Group[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { toasts, addToast, removeToast } = useToast();
 
   useEffect(() => {
     getMyGroups()
       .then(res => setGroups(res.data))
-      .catch(() => setError('Không thể tải danh sách nhóm'))
+      .catch(() => addToast('Failed to load your groups. Please try again.', 'error'))
       .finally(() => setIsLoading(false));
   }, []);
 
@@ -84,16 +85,13 @@ const Dashboard: React.FC = () => {
           </header>
 
           {isLoading && (
-            <div className="text-center py-20 text-slate-400">Đang tải danh sách nhóm...</div>
-          )}
-          {error && (
-            <div className="text-center py-20 text-red-400">{error}</div>
+            <div className="text-center py-20 text-slate-400">Loading groups...</div>
           )}
 
-          {!isLoading && !error && groups.length === 0 && (
+          {!isLoading && groups.length === 0 && (
             <div className="text-center py-20 text-slate-400">
               <span className="material-symbols-outlined text-6xl block mb-4">group_off</span>
-              Bạn chưa tham gia nhóm nào. Hãy chờ giảng viên mời vào nhóm!
+              You haven't joined any group yet. Wait for your teacher to invite you!
             </div>
           )}
 
@@ -115,11 +113,11 @@ const Dashboard: React.FC = () => {
                       </div>
                       <div className="flex items-center gap-1.5">
                         <span className="material-symbols-outlined text-lg text-slate-400">calendar_today</span>
-                        <span>Created: {new Date(group.createdAt).toLocaleDateString('vi-VN')}</span>
+                        <span>Created: {new Date(group.createdAt).toLocaleDateString('en-US')}</span>
                       </div>
                     </div>
                   </div>
-                  {/* Avg Grade badge nếu có */}
+                  {/* Grade & Rank badges nếu có */}
                   {group.averageGrade !== null && (
                     <div className="flex items-center gap-3">
                       <div className="px-4 py-2 bg-blue-50 rounded-lg text-center">
@@ -140,6 +138,8 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       </main>
+
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div>
   );
 };
