@@ -32,15 +32,16 @@ services:
     volumes:
       - ./DB/SQL:/scripts
     entrypoint: [ "/bin/bash", "-c" ]
-    command: >
-      echo "Bat dau chay script khoi tao SQL Server..." &&
-      /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P "Your_Strong_Password_123" -C -i /scripts/1_init_schema.sql &&
-      /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P "Your_Strong_Password_123" -C -i /scripts/2_seed_data.sql &&
-      /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P "Your_Strong_Password_123" -C -i /scripts/3_window_functions.sql &&
-      /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P "Your_Strong_Password_123" -C -i /scripts/4_triggers.sql &&
-      /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P "Your_Strong_Password_123" -C -i /scripts/5_stored_procedures.sql &&
-      /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P "Your_Strong_Password_123" -C -i /scripts/6_functions.sql &&
-      echo "SQL Server setup completed!"
+    command: 
+      - |
+        echo "Bat dau chay script khoi tao SQL Server..."
+        /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P "Your_Strong_Password_123" -C -i /scripts/1_init_schema.sql
+        /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P "Your_Strong_Password_123" -C -i /scripts/2_seed_data.sql
+        /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P "Your_Strong_Password_123" -C -i /scripts/3_window_functions.sql
+        /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P "Your_Strong_Password_123" -C -i /scripts/4_triggers.sql
+        /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P "Your_Strong_Password_123" -C -i /scripts/5_stored_procedures.sql
+        /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P "Your_Strong_Password_123" -C -i /scripts/6_functions.sql
+        echo "SQL Server setup completed!"
 
   # ==========================================
   # 2. MONGODB (Heavy Data & Analytics)

@@ -115,7 +115,7 @@ function App() {
       <Route path="/teacher/createexam" element={
         <ProtectedRoute allowedRoles={['Teacher']}>
           <TeacherLayout>
-            <CreateExam onBack={() => window.history.back()} onCreateExam={() => {}} />
+            <CreateExam />
           </TeacherLayout>
         </ProtectedRoute>
       } />

@@ -37,7 +37,20 @@ const Quiz: React.FC = () => {
   useEffect(() => {
     if (!examId) return;
     getExamContent(examId)
-      .then(res => setExam(res.data))
+      .then((res: any) => {
+        const rawData = res.data;
+        const mappedExam: ExamContent = {
+          ...rawData,
+          questions: (rawData.questions || []).map((q: any) => ({
+            id: q.questionId,
+            text: q.content,
+            options: q.options 
+              ? Object.entries(q.options).map(([key, val]) => ({ optionKey: key, text: val as string })) 
+              : []
+          }))
+        };
+        setExam(mappedExam);
+      })
       .catch(() => setError('Failed to load exam content'))
       .finally(() => setIsLoading(false));
   }, [examId]);

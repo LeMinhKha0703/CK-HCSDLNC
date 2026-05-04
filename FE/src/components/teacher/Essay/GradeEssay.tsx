@@ -1,196 +1,190 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Clock, MessageSquare, Save, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { gradeSubmission } from '../../../api/teacher';
+import { getSubmissionDetail, gradeSubmission } from '../../../api/teacher';
 
-interface GradeEssayProps {
-  onBack?: () => void;
-  studentName?: string;
+interface AnswerItem {
+  questionId: number;
+  content: string;
+  studentResponse: string;
+  score?: number;
 }
 
-const mockQuestions = Array.from({ length: 50 }, (_, i) => ({
-  id: i + 1,
-  prompt: i === 0 ? (
-    <>Analyze the role of isolation and environment in Emily Brontë's <span className="italic">Wuthering Heights</span>. How does the setting of the Yorkshire moors function as an active participant in shaping the psychological states of Heathcliff and Catherine? Support your argument with specific textual evidence.</>
-  ) : (
-    `Mock Question ${i + 1}: Please analyze the given topic and provide relevant evidence.`
-  ),
-  response: i === 0 ? (
-    <>
-      <p>
-        In Emily Brontë's masterful novel <span className="italic">Wuthering Heights</span>, the landscape is never merely a backdrop; it is a primal force that mirrors and shapes the turbulent internal lives of its protagonists. The Yorkshire moors—wild, unforgiving, and desolate—serve as both an isolator and an incubator for the intense, destructive passion between Heathcliff and Catherine Earnshaw. Unlike the sheltered, civilized environment of Thrushcross Grange, Wuthering Heights exposes its inhabitants to the raw elements of nature, fundamentally altering their psychological composition.
-      </p>
-      <p>
-        The moors represent an untamed wilderness that aligns perfectly with Heathcliff's mysterious origins and feral disposition. When Mr. Earnshaw brings the young Heathcliff to Wuthering Heights, he introduces an element of the chaotic outside world into the domestic sphere. The resulting isolation of the estate ensures that social norms and moral boundaries are suspended. Catherine notes this profound connection when she famously declares, "My love for Heathcliff resembles the eternal rocks beneath." She does not compare their love to anything cultivated or domestic, but to the harsh, enduring geological reality of their environment.
-      </p>
-      <p>
-        Furthermore, the physical distance between Wuthering Heights and the nearest town fosters an insular, almost claustrophobic psychological state. The characters are forced inward, turning upon one another in acts of cruelty and obsession. The wind that constantly batters the farmhouse is a sonic reminder of their separation from polite society, effectively drowning out the...
-      </p>
-    </>
-  ) : (
-    <p>Mock Student Response for Question {i + 1}.</p>
-  )
-}));
+interface SubmissionData {
+  fullName: string;
+  status: string;
+  totalScore: number | null;
+  submitedAt: string;
+  examType: string;
+  answers: AnswerItem[];
+}
 
-const GradeEssay: React.FC<GradeEssayProps> = ({ onBack, studentName }) => {
-  const { examId, submissionId } = useParams();
+const GradeEssay: React.FC = () => {
+  const { examId, submissionId } = useParams<{ examId: string; submissionId: string }>();
   const navigate = useNavigate();
-  const [currentQuestionId, setCurrentQuestionId] = useState(1);
-  const [score, setScore] = useState('');
+  const [submission, setSubmission] = useState<SubmissionData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
+  // scores[questionId] = điểm cho câu đó (thang 10)
+  const [scores, setScores] = useState<Record<number, string>>({});
   const [isSaving, setIsSaving] = useState(false);
-  const currentQuestionInfo = mockQuestions.find(q => q.id === currentQuestionId) || mockQuestions[0];
 
-  const handleSave = async () => {
-    if (!examId || !submissionId) {
-      alert('Thiếu thông tin bài nộp');
-      return;
-    }
-    if (!score.trim()) {
-      alert('Please enter a grade before saving');
-      return;
-    }
+  useEffect(() => {
+    if (!examId || !submissionId) return;
+    getSubmissionDetail(examId, submissionId)
+      .then(res => {
+        setSubmission(res.data);
+        // Nạp điểm cũ (nếu đã có từ MongoDB)
+        const initScores: Record<number, string> = {};
+        for (const a of (res.data.answers || [])) {
+          if (a.score !== undefined) initScores[a.questionId] = String(a.score);
+        }
+        setScores(initScores);
+      })
+      .catch(console.error)
+      .finally(() => setIsLoading(false));
+  }, [examId, submissionId]);
+
+  const handleSaveAll = async () => {
+    if (!examId || !submissionId || !submission) return;
+    const grades = submission.answers.map(a => ({
+      questionId: a.questionId,
+      score: parseFloat(scores[a.questionId] || '0'),
+    }));
     setIsSaving(true);
     try {
-      await gradeSubmission(examId, submissionId, {
-        grades: [{ questionId: currentQuestionId, score: parseFloat(score) }]
-      });
+      await gradeSubmission(examId, submissionId, { grades });
       alert('Grade saved successfully!');
       navigate(-1);
-    } catch (err) {
+    } catch {
       alert('Failed to save grade!');
     } finally {
       setIsSaving(false);
     }
   };
 
+  if (isLoading) return <div className="max-w-6xl mx-auto pt-6 text-center py-20 text-slate-400">Loading submission...</div>;
+  if (!submission) return <div className="max-w-6xl mx-auto pt-6 text-center py-20 text-red-500">Submission not found.</div>;
+
+  const questions = submission.answers;
+  const currentQ = questions[currentQuestionIdx];
+  const totalQuestions = questions.length;
+  const maxScorePerQuestion = totalQuestions > 0 ? Number((10 / totalQuestions).toFixed(2)) : 10;
+
   return (
     <div className="max-w-6xl mx-auto pt-6">
-    
-        {/* Header Navigation */}
-        <div className="flex justify-between items-center mb-10">
-            <button onClick={onBack || (() => navigate(-1))} className="text-gray-500 hover:text-[#1a38cf] flex items-center mb-6 text-sm font-medium transition-colors">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
-            </button>
-        </div>
 
-        {/* Title Block */}
+        <button onClick={() => navigate(-1)} className="text-gray-500 hover:text-[#1a38cf] flex items-center mb-6 text-sm font-medium transition-colors">
+          <ArrowLeft className="w-4 h-4 mr-2" /> Back
+        </button>
+
         <div className="mb-8">
-            <h1 className="text-[32px] font-bold text-[#111827] leading-none mb-3">{studentName} - Essay Submission</h1>
+            <h1 className="text-[32px] font-bold text-[#111827] leading-none mb-3">{submission.fullName} — Essay Submission</h1>
             <div className="flex items-center space-x-6 text-sm text-gray-600 font-medium">
-            <span className="flex items-center"><Clock className="w-4 h-4 mr-2 text-gray-500" /> Submitted: Oct 24, 2023</span>
+              <span className="flex items-center">
+                <Clock className="w-4 h-4 mr-2 text-gray-500" />
+                Submitted: {new Date(submission.submitedAt).toLocaleString('en-US')}
+              </span>
             </div>
         </div>
 
-        {/* Two Column Layout */}
         <div className="flex gap-8">
-            
-            {/* Left Column: Essay Content */}
+            {/* Left Column */}
             <div className="flex-1 max-w-[65%] space-y-6">
-            
-                {/* Question Prompt */}
-                <div className="bg-[#f9fafb] border-l-4 border-[#1a38cf] rounded-r-xl p-6">
-                    <div className="flex items-center text-[#1a38cf] text-xs font-bold uppercase tracking-wider mb-3">
-                    <MessageSquare className="w-4 h-4 mr-2" />
-                    QUESTION {currentQuestionId}
-                    </div>
-                    <div className="text-gray-800 text-[15px] leading-relaxed">
-                    {currentQuestionInfo.prompt}
-                    </div>
-                </div>
 
-                {/* Student Response */}
-                <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-8 pb-12">
-                    <div className="flex justify-between items-center mb-6">
-                    <div className="flex items-center text-gray-500 text-xs font-bold uppercase tracking-wider">
-                        <FileText className="w-4 h-4 mr-2" />
-                        Student Response
+                {currentQ && (
+                  <>
+                    <div className="bg-[#f9fafb] border-l-4 border-[#1a38cf] rounded-r-xl p-6">
+                        <div className="flex items-center text-[#1a38cf] text-xs font-bold uppercase tracking-wider mb-3">
+                          <MessageSquare className="w-4 h-4 mr-2" />
+                          QUESTION {currentQuestionIdx + 1}
+                        </div>
+                        <div className="text-gray-800 text-[15px] leading-relaxed">{currentQ.content}</div>
                     </div>
-                    </div>
-                    
-                    <div className="text-gray-800 text-[15px] leading-[1.8] space-y-6">
-                    {currentQuestionInfo.response}
-                    </div>
-                </div>
 
-                {/* Navigation Buttons */}
+                    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-8 pb-12">
+                        <div className="flex items-center text-gray-500 text-xs font-bold uppercase tracking-wider mb-6">
+                          <FileText className="w-4 h-4 mr-2" /> Student Response
+                        </div>
+                        <div
+                          className="text-gray-800 text-[15px] leading-[1.8]"
+                          dangerouslySetInnerHTML={{ __html: currentQ.studentResponse }}
+                        />
+                    </div>
+
+                    {/* Grade input for this question */}
+                    <div className="bg-[#f9fafb] rounded-xl p-6 border border-gray-100 shadow-sm">
+                      <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">
+                        Score for Question {currentQuestionIdx + 1} / {maxScorePerQuestion}
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="number" min="0" max={maxScorePerQuestion} step="0.1"
+                          placeholder={`e.g. ${Number((maxScorePerQuestion * 0.8).toFixed(1))}`}
+                          value={scores[currentQ.questionId] ?? ''}
+                          onChange={e => setScores(prev => ({ ...prev, [currentQ.questionId]: e.target.value }))}
+                          className="w-full bg-[#f0f2f5] border border-transparent focus:border-[#1a38cf] focus:bg-white rounded-lg py-3 px-4 outline-none text-gray-900 font-medium transition-colors"
+                        />
+                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium text-sm">/ {maxScorePerQuestion}</span>
+                      </div>
+                    </div>
+                  </>
+                )}
+
                 <div className="flex justify-between items-center pt-2 pb-8">
                   <button
-                    onClick={() => setCurrentQuestionId(prev => Math.max(1, prev - 1))}
-                    disabled={currentQuestionId === 1}
-                    className="flex items-center text-sm font-bold text-gray-600 hover:text-[#1a38cf] disabled:opacity-50 disabled:hover:text-gray-600 transition-colors"
+                    onClick={() => setCurrentQuestionIdx(prev => Math.max(0, prev - 1))}
+                    disabled={currentQuestionIdx === 0}
+                    className="flex items-center text-sm font-bold text-gray-600 hover:text-[#1a38cf] disabled:opacity-50 transition-colors"
                   >
                     <ChevronLeft className="w-5 h-5 mr-1" /> Previous Question
                   </button>
                   <button
-                    onClick={() => setCurrentQuestionId(prev => Math.min(mockQuestions.length, prev + 1))}
-                    disabled={currentQuestionId === mockQuestions.length}
-                    className="bg-[#1a38cf] hover:bg-[#0a2899] text-white py-2.5 px-6 rounded-lg font-bold text-sm flex items-center transition-colors shadow-sm disabled:opacity-50 disabled:hover:bg-[#1a38cf]"
+                    onClick={() => setCurrentQuestionIdx(prev => Math.min(totalQuestions - 1, prev + 1))}
+                    disabled={currentQuestionIdx === totalQuestions - 1}
+                    className="bg-[#1a38cf] hover:bg-[#0a2899] text-white py-2.5 px-6 rounded-lg font-bold text-sm flex items-center transition-colors shadow-sm disabled:opacity-50"
                   >
                     Next Question <ChevronRight className="w-5 h-5 ml-1" />
                   </button>
                 </div>
             </div>
 
-            {/* Right Column: Evaluation Panel */}
+            {/* Right Column: Navigator + Save */}
             <div className="w-[35%] space-y-6">
-            
-                {/* Question Navigator */}
                 <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
                     <div className="mb-4">
                         <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-1">Question Navigator</h3>
-                        <p className="text-[13px] text-gray-500">{mockQuestions.length} Total Questions</p>
+                        <p className="text-[13px] text-gray-500">{totalQuestions} Total Questions</p>
                     </div>
-                    <div className="grid grid-cols-5 gap-2 max-h-[220px] overflow-y-auto pr-1">
-                        {mockQuestions.map((q) => (
+                    <div className="grid grid-cols-5 gap-2">
+                        {questions.map((q, idx) => (
                           <button
-                            key={q.id}
-                            onClick={() => setCurrentQuestionId(q.id)}
+                            key={q.questionId}
+                            onClick={() => setCurrentQuestionIdx(idx)}
                             className={`py-2 text-[13px] font-medium rounded border transition-colors ${
-                              currentQuestionId === q.id 
-                                ? 'bg-[#1a38cf] text-white border-[#1a38cf]' 
-                                : 'bg-white text-gray-700 border-gray-200 hover:border-[#1a38cf] hover:text-[#1a38cf]'
+                              currentQuestionIdx === idx
+                                ? 'bg-[#1a38cf] text-white border-[#1a38cf]'
+                                : scores[q.questionId]
+                                  ? 'bg-green-50 text-green-700 border-green-200'
+                                  : 'bg-white text-gray-700 border-gray-200 hover:border-[#1a38cf] hover:text-[#1a38cf]'
                             }`}
                           >
-                            {q.id}
+                            {idx + 1}
                           </button>
                         ))}
                     </div>
                 </div>
 
-                {/* Evaluation Panel Card */}
-                <div className="bg-[#f9fafb] rounded-xl p-6 border border-gray-100 shadow-sm">
-                    {/* <div className="flex items-center text-gray-900 font-bold mb-6">
-                    <CheckSquareIcon className="w-5 h-5 mr-2 text-[#1a38cf]" />
-                    Evaluation Panel or Grading
-                    </div> */}
-                    
-                    <div className="mb-6">
-                        <label className="block text-xs font-bold text-gray-700 mb-2">Overall Score / 100</label>
-                        <div className="relative">
-                            <input 
-                              type="number" 
-                              min="0" max="100"
-                              placeholder="e.g. 85" 
-                              value={score}
-                              onChange={e => setScore(e.target.value)}
-                              className="w-full bg-[#f0f2f5] border border-transparent focus:border-[#1a38cf] focus:bg-white rounded-lg py-3 px-4 outline-none text-gray-900 font-medium transition-colors" />
-                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium text-sm">pts</span>
-                        </div>
-                    </div>
-
-
-                    <button 
-                      onClick={handleSave}
-                      disabled={isSaving}
-                      className="w-full bg-[#0a44cc] hover:bg-[#0a3bbb] text-white py-3.5 rounded-lg font-bold text-sm flex justify-center items-center transition-colors shadow-sm disabled:opacity-60">
-                    <Save className="w-4 h-4 mr-2" />
-                    {isSaving ? 'Đang lưu...' : 'Save Evaluation'}
-                    </button>
-                </div>
+                <button
+                  onClick={handleSaveAll}
+                  disabled={isSaving}
+                  className="w-full bg-[#0a44cc] hover:bg-[#0a3bbb] text-white py-3.5 rounded-lg font-bold text-sm flex justify-center items-center transition-colors shadow-sm disabled:opacity-60"
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  {isSaving ? 'Saving...' : 'Save All Grades'}
+                </button>
             </div>
         </div>
-
     </div>
   );
 };

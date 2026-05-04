@@ -59,11 +59,11 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({ onBack, groupTitle, student
         .then((res: any) => {
           const data = res.data;
           setGroupName(data.groupName || 'Group Details');
-          const mapped: GroupStudent[] = (data.students || []).map((s: { userId: string; fullName: string; email: string; averageGrade: number }, idx: number) => {
-            const grade = parseFloat(s.averageGrade?.toString() || '0');
+          const mapped: GroupStudent[] = (data.students || []).map((s: { studentId: string; fullName: string; email: string; averageGrade: number }, idx: number) => {
+            const grade = s.averageGrade !== null && s.averageGrade !== undefined ? parseFloat(s.averageGrade.toString()) : 0;
             const colors = getGradeColors(grade);
             return {
-              id: s.userId,
+              id: s.studentId,
               stt: String(idx + 1).padStart(2, '0'),
               name: s.fullName,
               email: s.email,
@@ -97,11 +97,11 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({ onBack, groupTitle, student
         // Reload sau khi invite thành công
         const res: any = await getGroupDetail(groupId);
         const data = res.data;
-        const mapped: GroupStudent[] = (data.students || []).map((s: { userId: string; fullName: string; email: string; averageGrade: number }, idx: number) => {
-          const grade = parseFloat(s.averageGrade?.toString() || '0');
+        const mapped: GroupStudent[] = (data.students || []).map((s: { studentId: string; fullName: string; email: string; averageGrade: number }, idx: number) => {
+          const grade = s.averageGrade !== null && s.averageGrade !== undefined ? parseFloat(s.averageGrade.toString()) : 0;
           const colors = getGradeColors(grade);
           return {
-            id: s.userId,
+            id: s.studentId,
             stt: String(idx + 1).padStart(2, '0'),
             name: s.fullName,
             email: s.email,
@@ -251,7 +251,7 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({ onBack, groupTitle, student
         <InviteStudentsModal 
           isOpen={isInviteModalOpen} 
           onClose={() => setIsInviteModalOpen(false)} 
-          groupTitle={groupTitle || 'Unnamed Group'} 
+          groupTitle={groupName} 
           onInviteStudents={handleInviteStudents}
         />
       </div>

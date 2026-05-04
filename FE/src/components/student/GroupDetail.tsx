@@ -46,11 +46,17 @@ const GroupDetail: React.FC = () => {
   }, [groupId]);
 
   const handleStartExam = (exam: Exam) => {
-    if (!exam.examId) return;
-    if (exam.type === 'MCQ') {
+    if (!exam.examId) {
+      addToast('Error: Exam ID is missing', 'error');
+      return;
+    }
+    const typeStr = String(exam.type || '').trim().toUpperCase();
+    if (typeStr === 'MCQ') {
       navigate(`/exams/mcq/${exam.examId}`);
-    } else {
+    } else if (typeStr === 'ESSAY') {
       navigate(`/exams/essay/${exam.examId}`);
+    } else {
+      addToast(`Error: Unknown exam type "${exam.type}"`, 'error');
     }
   };
 

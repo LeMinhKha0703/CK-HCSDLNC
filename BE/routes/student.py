@@ -243,13 +243,17 @@ async def submit_exam(
     status = "Graded" if exam.Type == "MCQ" else "Pending"
 
     # Lưu vào SQL Server (lấy SubmissionID)
+    # FIX: fetchone() TRƯỚC commit() để cursor không bị invalidate
     result = conn.execute(text("""
         INSERT INTO Submissions (ExamID, StudentID, TotalScore, Status)
         OUTPUT INSERTED.SubmissionID
         VALUES (:eid, :uid, :score, :status)
     """), {"eid": exam_id, "uid": uid, "score": total_score, "status": status})
+    sub_row = result.fetchone()
+    if not sub_row:
+        raise HTTPException(status_code=500, detail="Failed to submit exam: no ID returned from database")
+    submission_id = str(sub_row.SubmissionID)
     conn.commit()
-    submission_id = str(result.fetchone().SubmissionID)
 
     # Lưu chi tiết vào MongoDB
     await mongo["Submission_Answers"].insert_one({

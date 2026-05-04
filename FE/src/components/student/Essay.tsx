@@ -36,7 +36,17 @@ const Essay: React.FC = () => {
   useEffect(() => {
     if (!examId) return;
     getExamContent(examId)
-      .then(res => setExam(res.data))
+      .then((res: any) => {
+        const rawData = res.data;
+        const mappedExam: ExamContent = {
+          ...rawData,
+          questions: (rawData.questions || []).map((q: any) => ({
+            id: q.questionId,
+            text: q.content
+          }))
+        };
+        setExam(mappedExam);
+      })
       .catch(() => setError('Failed to load exam content'))
       .finally(() => setIsLoading(false));
   }, [examId]);
@@ -46,7 +56,11 @@ const Essay: React.FC = () => {
     if (editorRef.current && exam) {
       const qId = exam.questions[currentQuestionIndex]?.id;
       if (qId) {
-        editorRef.current.innerHTML = answers[qId] || '';
+        const currentHtml = editorRef.current.innerHTML;
+        const newHtml = answers[qId] || '';
+        if (currentHtml !== newHtml) {
+          editorRef.current.innerHTML = newHtml;
+        }
       }
     }
   }, [currentQuestionIndex, exam, answers]);

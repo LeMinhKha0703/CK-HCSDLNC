@@ -63,7 +63,7 @@ def get_groups(current_user=Depends(_teacher), conn=Depends(get_sql_conn)):
         {
             "groupId": str(r.GroupID),
             "groupName": r.GroupName,
-            "totalStudent": r.TotalStudent,
+            "totalStudents": r.TotalStudent,
             "createdAt": str(r.CreatedAt)
         }
         for r in rows
@@ -80,20 +80,25 @@ def create_group(
     uid = current_user["user_id"]
 
     # Tạo nhóm (TotalStudent bắt đầu từ 0, Trigger sẽ tự cập nhật khi insert Group_Students)
+    # FIX: fetchone() TRƯỚC commit() để cursor không bị invalidate
     result = conn.execute(text("""
         INSERT INTO Groups (TeacherID, GroupName, TotalStudent)
         OUTPUT INSERTED.GroupID
         VALUES (:tid, :name, 0)
     """), {"tid": uid, "name": body.groupName})
+    row = result.fetchone()
+    if not row:
+        raise HTTPException(status_code=500, detail="Failed to create group: no ID returned from database")
+    group_id = str(row.GroupID)
     conn.commit()
-    group_id = str(result.fetchone().GroupID)
 
     # Gửi lời mời sinh viên nếu có danh sách email
     invited = 0
     for email in (body.studentEmails or []):
         _invite_student_by_email(email, group_id, conn, group_name=body.groupName)
         invited += 1
-    conn.commit()
+    if invited > 0:
+        conn.commit()
 
     return {
         "message": "Group created successfully",
@@ -261,6 +266,7 @@ async def create_exam(
     total_questions = len(body.questions)
 
     # Bước 1: Insert vào SQL Server
+    # FIX: fetchone() TRƯỚC commit() để cursor không bị invalidate
     result = conn.execute(text("""
         INSERT INTO Exams (GroupID, Title, Type, TotalQuestions, EndAt)
         OUTPUT INSERTED.ExamID
@@ -272,8 +278,11 @@ async def create_exam(
         "tq": total_questions,
         "endAt": body.endAt
     })
+    row = result.fetchone()
+    if not row:
+        raise HTTPException(status_code=500, detail="Failed to create exam: no ID returned from database")
+    exam_id = str(row.ExamID)
     conn.commit()
-    exam_id = str(result.fetchone().ExamID)
 
     # Bước 2: Insert nội dung câu hỏi vào MongoDB
     questions_data = []
@@ -369,9 +378,11 @@ async def get_exam_detail(
             {"$sort": {"_id": 1}}
         ]
         async for doc in mongo["Submission_Answers"].aggregate(pipeline):
+            avg = doc.get("averageScore")
             chart_data.append({
                 "questionId": doc["_id"],
-                "averageScore": round(doc["averageScore"], 2)
+                # FIX: guard against None when no graded scores exist yet
+                "averageScore": round(avg, 2) if avg is not None else None
             })
 
     return {
