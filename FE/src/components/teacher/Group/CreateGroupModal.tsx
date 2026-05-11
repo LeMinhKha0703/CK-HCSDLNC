@@ -27,9 +27,15 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ isOpen, onClose, on
 
   const handleCreateGroup = () => {
     const trimmedGroupName = groupName.trim();
-    if (!trimmedGroupName || emailChips.length === 0) return;
+    if (!trimmedGroupName) return;
 
-    onCreateGroup(trimmedGroupName, emailChips);
+    const trimmedEmail = emailInput.trim();
+    const finalEmails = [...emailChips];
+    if (trimmedEmail) {
+      finalEmails.push(trimmedEmail);
+    }
+
+    onCreateGroup(trimmedGroupName, finalEmails);
     resetForm();
     onClose();
   };
@@ -139,7 +145,7 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ isOpen, onClose, on
           <button 
             type="button"
             onClick={handleCreateGroup}
-            disabled={!groupName.trim() || emailChips.length === 0}
+            disabled={!groupName.trim()}
             className="bg-[#1a38cf] hover:bg-[#112480] disabled:bg-[#9db0f0] disabled:cursor-not-allowed text-white px-6 py-2.5 rounded-lg font-semibold shadow-sm transition-colors text-sm"
           >
             Create Group

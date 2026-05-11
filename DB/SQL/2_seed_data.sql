@@ -30,10 +30,10 @@ INSERT INTO Users (UserID, FullName, Email, PasswordHash, Role) VALUES
 ('33333333-3333-3333-3333-333333333336', 'Fiona Gallagher', 'student6@elearning.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', 'Student');
 
 -- 2. Insert Groups
--- TotalStudent set thủ công để mô phỏng ban đầu, Trigger trg_AfterInsert_UpdateTotalStudent sẽ tự chạy khi insert Group_Students
+-- TotalStudent khởi tạo đúng với số lượng sinh viên seed ở bước sau
 INSERT INTO Groups (GroupID, TeacherID, GroupName, TotalStudent) VALUES 
-('44444444-4444-4444-4444-444444444441', '22222222-2222-2222-2222-222222222222', 'Advanced Database Systems', 0),
-('44444444-4444-4444-4444-444444444442', '22222222-2222-2222-2222-222222222222', 'Web Development 101', 0);
+('44444444-4444-4444-4444-444444444441', '22222222-2222-2222-2222-222222222222', 'Advanced Database Systems', 3),
+('44444444-4444-4444-4444-444444444442', '22222222-2222-2222-2222-222222222222', 'Web Development 101', 2);
 
 -- 3. Insert Group_Students
 -- (Alice, Bob, Charlie vào Group 1)

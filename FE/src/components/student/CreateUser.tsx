@@ -52,14 +52,14 @@ const CreateUser: React.FC = () => {
             <span className="material-symbols-outlined">group</span>
             <span>User Management</span>
           </button>
+          <button
+            onClick={() => { logout(); navigate('/login'); }}
+            className="flex items-center gap-3 px-3 py-2.5 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all w-full"
+          >
+            <span className="material-symbols-outlined">logout</span>
+            <span>Log out</span>
+          </button>
         </nav>
-        <button
-          onClick={() => { logout(); navigate('/login'); }}
-          className="flex items-center gap-3 px-3 py-2.5 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-        >
-          <span className="material-symbols-outlined">logout</span>
-          <span>Log out</span>
-        </button>
       </aside>
 
       <main className="ml-64 min-h-screen flex-1 flex items-center justify-center p-8">
@@ -113,7 +113,6 @@ const CreateUser: React.FC = () => {
                 >
                   <option value="Teacher">Teacher</option>
                   <option value="Student">Student</option>
-                  <option value="Admin">Admin</option>
                 </select>
               </div>
               <div className="space-y-1.5">

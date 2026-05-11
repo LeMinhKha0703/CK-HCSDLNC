@@ -7,8 +7,8 @@ import { getUsers, updateUser, deleteUser } from '../../api/admin';
 import DeleteUserModal from './DeleteUserModal';
 
 interface User {
-  id: string;
-  name: string;
+  userId: string;
+  fullName: string;
   email: string;
   role: string;
 }
@@ -56,8 +56,8 @@ const Admin: React.FC = () => {
   }, [currentPage, totalPages]);
 
   const handleEditClick = (u: User) => {
-    setEditingId(u.id);
-    setEditName(u.name);
+    setEditingId(u.userId);
+    setEditName(u.fullName);
     setEditEmail(u.email);
     setEditRole(u.role);
   };
@@ -84,7 +84,7 @@ const Admin: React.FC = () => {
   const handleConfirmDelete = async () => {
     if (!selectedUser) return;
     try {
-      await deleteUser(selectedUser.id);
+      await deleteUser(selectedUser.userId);
       fetchUsers();
     } catch (err) {
       alert('Failed to delete user!');
@@ -120,14 +120,14 @@ const Admin: React.FC = () => {
             <span className="material-symbols-outlined">group</span>
             <span>User Management</span>
           </button>
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 px-3 py-2.5 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all w-full"
+          >
+            <span className="material-symbols-outlined">logout</span>
+            <span>Log out</span>
+          </button>
         </nav>
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-3 px-3 py-2.5 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-        >
-          <span className="material-symbols-outlined">logout</span>
-          <span>Log out</span>
-        </button>
       </aside>
 
       {/* Main Content */}
@@ -155,6 +155,7 @@ const Admin: React.FC = () => {
                 <option value="All Roles">All Roles</option>
                 <option value="Teacher">Teacher</option>
                 <option value="Student">Student</option>
+                <option value="Admin">Admin</option>
               </select>
             </div>
           </div>
@@ -198,10 +199,10 @@ const Admin: React.FC = () => {
                         <td colSpan={5} className="text-center py-8 text-slate-400">Không tìm thấy người dùng nào</td>
                       </tr>
                     ) : pageUsers.map((u) => (
-                      editingId === u.id ? (
+                      editingId === u.userId ? (
                         /* Row chế độ EDIT */
-                        <tr key={u.id} className="bg-white shadow-sm border-y border-blue-500/10">
-                          <td className="px-6 py-4 text-xs font-mono text-slate-500">{u.id}</td>
+                        <tr key={u.userId} className="bg-white shadow-sm border-y border-blue-500/10">
+                          <td className="px-6 py-4 text-xs font-mono text-slate-500">{u.userId}</td>
                           <td className="px-6 py-4">
                             <input className="w-full bg-[#f3f4f5] border-b-2 border-[#003d9b] rounded-t-lg px-3 py-1 text-sm font-bold outline-none" type="text" value={editName} onChange={(e) => setEditName(e.target.value)} />
                           </td>
@@ -212,7 +213,6 @@ const Admin: React.FC = () => {
                             <select className="w-full bg-[#f3f4f5] border-b-2 border-[#003d9b] rounded-t-lg px-3 py-1 text-xs font-semibold outline-none" value={editRole} onChange={(e) => setEditRole(e.target.value)}>
                               <option value="Teacher">Teacher</option>
                               <option value="Student">Student</option>
-                              <option value="Admin">Admin</option>
                             </select>
                           </td>
                           <td className="px-6 py-4 text-right">
@@ -226,9 +226,9 @@ const Admin: React.FC = () => {
                         </tr>
                       ) : (
                         /* Row chế độ STATIC */
-                        <tr key={u.id} className="group hover:bg-white transition-colors">
-                          <td className="px-6 py-4 text-xs font-mono text-slate-500">{u.id}</td>
-                          <td className="px-6 py-4"><span className="text-sm font-bold text-[#191c1d]">{u.name}</span></td>
+                        <tr key={u.userId} className="group hover:bg-white transition-colors">
+                          <td className="px-6 py-4 text-xs font-mono text-slate-500">{u.userId}</td>
+                          <td className="px-6 py-4"><span className="text-sm font-bold text-[#191c1d]">{u.fullName}</span></td>
                           <td className="px-6 py-4 text-sm text-slate-600">{u.email}</td>
                           <td className="px-6 py-4">
                             <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${u.role === 'Student' ? 'bg-[#e1e3e4] text-[#434654]' : u.role === 'Admin' ? 'bg-purple-100 text-purple-700' : 'bg-[#b6c8fe] text-[#415382]'}`}>
