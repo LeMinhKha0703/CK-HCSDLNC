@@ -1,85 +1,68 @@
-# Project Status & Agent Handover Guide: E-learning Analytics System
+# E-learning Analytics System
 
-Tài liệu này ghi lại toàn bộ tiến độ dự án, cấu trúc mã nguồn, hướng dẫn cài đặt và lộ trình tiếp theo. Nó được thiết kế đặc biệt để các Agent hoặc Developer khác có thể đọc hiểu và tiếp quản hệ thống một cách nhanh chóng.
+## 1. Introduction
+E-learning Analytics is an advanced online learning management platform designed to serve multi-dimensional interactions among Administrators (Admin), Instructors (Teacher), and Students. The system not only provides core classroom and examination management features but also applies complex data processing techniques to analyze learning performance.
 
-## 1. Công nghệ & Công cụ (Tech Stack & Tools)
-Hệ thống sử dụng kiến trúc **Polyglot Persistence** (Đa lưu trữ) kết hợp với các công nghệ hiện đại:
-- **Backend:** Python, FastAPI, SQLAlchemy (tương tác SQL Server), Motor (tương tác MongoDB bất đồng bộ), PyJWT (Authentication).
-- **Frontend:** React, Vite, TypeScript (100% `.tsx`), React Router DOM (Routing), Recharts (Vẽ biểu đồ), Lucide React (Icons), Tailwind CSS (Styling).
-- **Databases:** 
-  - **SQL Server:** Quản lý dữ liệu có cấu trúc quan hệ (Users, Groups, Metadata bài thi, Điểm số tổng hợp).
-  - **MongoDB:** Quản lý dữ liệu phi cấu trúc và linh hoạt (Nội dung câu hỏi chi tiết, Bài làm của sinh viên).
-- **Infrastructure:** Docker & Docker Compose để quản lý các Database Containers.
+The system is designed based on the principles of **Advanced Database Systems**, leveraging the power of data analytics techniques, concurrent transaction processing, and polyglot persistence architecture to deliver a seamless experience and the highest level of data integrity.
 
-## 2. Cấu trúc hệ thống (Project Structure)
-```text
-CK-HCSDLNC/
-├── BE/                      # Backend FastAPI
-│   ├── routes/              # Các Endpoint chia theo module (auth, student, teacher, admin)
-│   ├── main.py              # Entry point của ứng dụng (Khởi tạo FastAPI, CORS)
-│   ├── database.py          # Cấu hình kết nối SQL Server & MongoDB
-│   ├── auth.py              # Xử lý băm mật khẩu (SHA-256), tạo JWT & Phân quyền (RBAC)
-│   ├── models.py            # Pydantic Schemas validate dữ liệu đầu vào/ra
-│   └── .env                 # Biến môi trường (DB Connection, Secret Key)
-├── FE/                      # Frontend React (Vite)
-│   ├── src/
-│   │   ├── api/             # Axios Client & API functions (Interceptors tự động đính kèm JWT)
-│   │   ├── components/      # Chia nhỏ theo roles: common/, student/, teacher/, admin/
-│   │   ├── context/         # AuthContext quản lý Global State của User/Session
-│   │   ├── App.tsx          # Cấu hình Routing trung tâm chuẩn theo SCREEN.md
-│   │   └── main.tsx         # Entry point, bọc các Provider
-├── DB/SQL/                  # Chứa các scripts khởi tạo SQL
-│   └── 2_seed_data.sql      # Seed data khởi tạo Admin/Teacher/Student mẫu (Đã mã hóa pass)
-├── docker-compose.yml       # Cấu hình chạy SQL Server & MongoDB
-├── APIADDRESS.md            # Tài liệu đặc tả API Endpoints
-└── SCREEN.md                # Tài liệu đặc tả luồng UI & Routing Frontend
-```
+## 2. Architecture Overview
+The system is cleanly decoupled into 3 independent subsystems (Frontend, Backend, Database), strictly adhering to the Client-Server model and a Micro-services-ready architecture:
 
-## 3. Hướng dẫn chạy hệ thống (How to Run)
+*   **Frontend (React + TypeScript + Vite):**
+    *   Modern user interface, built with React combined with TypeScript to ensure type-safety.
+    *   Uses Axios with Interceptors to automatically manage and attach JWT Tokens in all transactions, securing the data flow.
+*   **Backend (FastAPI + Python):**
+    *   Built on the FastAPI framework, providing extremely high asynchronous processing performance.
+    *   Provides strictly authorized RESTful APIs through RBAC (Role-Based Access Control) Middleware.
+    *   Applies the Saga-lite pattern in Python code to ensure Consistency when communicating with multiple databases simultaneously.
+*   **Database (Polyglot Persistence):**
+    *   The Polyglot Architecture is the highlight of the system:
+        *   **SQL Server (Relational DB):** Responsible for storing core data that requires high integrity and ACID properties (Users, Groups, Submissions). Applies advanced T-SQL techniques such as DML Triggers, Stored Procedures, Table-Valued Functions, and Indexed Views to optimize queries directly at the database level.
+        *   **MongoDB (Document DB):** Responsible for storing unstructured and flexible data (Exam question contents, Detailed student answers). Uses the Aggregation Pipeline to retrieve data for Analytics charts.
 
-### Bước 1: Khởi động Database (Docker)
-Mở terminal tại thư mục gốc `CK-HCSDLNC` và chạy:
+## 3. Tools Required and Setup Guide
+
+### Tools Required
+To run the entire system, your computer needs to have the following software installed:
+1. **Docker Desktop** (To run the SQL Server and MongoDB environments)
+2. **Python 3.10+** (For the FastAPI Backend)
+3. **Node.js (version 18+) & npm** (For the React Frontend)
+
+### Setup & Run Instructions
+
+**Step 1: Start the Database (Docker)**
+Open a terminal in the project's root directory (`CK-HCSDLNC`) and run the following command:
 ```bash
 docker-compose up -d
 ```
-- **SQL Server** sẽ chạy ở port `1433`. Password mặc định: `Your_Strong_Password_123`
-- **MongoDB** sẽ chạy ở port `27017`.
+*(The schema initialization and seed data scripts will be automatically executed by SQL Server during the first startup).*
 
-### Bước 2: Khởi động Backend (FastAPI)
-Mở terminal mới, di chuyển vào thư mục `BE`:
+**Step 2: Start the Backend (FastAPI)**
+Open a new terminal, navigate into the `BE` directory:
 ```bash
 cd BE
-# Kích hoạt môi trường ảo (ví dụ: conda activate fastapi-env hoặc source venv/bin/activate)
-pip install -r requirements.txt # Nếu chưa cài dependencies
+# (Optional) Activate a virtual environment: python -m venv venv && source venv/Scripts/activate
+pip install -r requirements.txt
 uvicorn main:app --reload
 ```
-- Backend sẽ chạy tại: `http://localhost:8000`
+*The Backend will run at: `http://localhost:8000` (Visit `http://localhost:8000/docs` to view the Swagger UI API).*
 
-### Bước 3: Khởi động Frontend (React/Vite)
-Mở terminal mới, di chuyển vào thư mục `FE`:
+**Step 3: Start the Frontend (React/Vite)**
+Open a new terminal, navigate into the `FE` directory:
 ```bash
 cd FE
 npm install
 npm run dev
 ```
-- Frontend sẽ chạy tại: `http://localhost:5173`
+*The Frontend will automatically start and can be accessed at: `http://localhost:5173`*
 
-### Tài khoản Test (Mật khẩu mặc định: `123456`)
-- Admin: `admin@elearning.com`
-- Teacher: `teacher@elearning.com`
-- Student 1: `student1@elearning.com`
-- Student 2: `student2@elearning.com`
+## 4. Test Accounts
+The system has been pre-initialized (Seed Data) with accounts covering different roles for convenient testing.
 
-## 4. Những việc ĐÃ làm được (What's Done)
-- [x] **Infrastructure & Database:** Hoàn thiện Docker compose. Tích hợp thành công cơ chế Polyglot Persistence (Ghi/Đọc đồng bộ giữa SQL và Mongo).
-- [x] **Backend Authentication:** Tích hợp JWT, Middleware RBAC (`require_role`), băm mật khẩu bằng thuật toán chuẩn (SHA-256). Đã đồng bộ mã băm vào file `2_seed_data.sql`.
-- [x] **Frontend Architecture:** Chuyển đổi thành công 100% codebase từ JavaScript sang TypeScript (`.tsx`). Loại bỏ toàn bộ cảnh báo và lỗi biên dịch của `tsc`.
-- [x] **Student Module:** Sinh viên đã có thể tham gia nhóm, nhận thông báo mời, làm bài MCQ (Trắc nghiệm) và Essay (Tự luận), tự động nộp bài về cả hai DB.
-- [x] **Teacher Module:** Giảng viên đã có thể tạo nhóm, mời sinh viên, tạo bài thi, và chấm bài. Tích hợp `Recharts` để vẽ biểu đồ phân tích năng lực sinh viên dựa trên dữ liệu thực.
-- [x] **Admin Module:** Admin đã có thể thao tác Quản lý User (CRUD), lọc theo Role, tạo tài khoản mới.
+All accounts below share the same default password:
+**`123456`**
 
-## 5. Lưu ý sống còn cho Agent tiếp theo (Crucial Notes for Next Agents)
-1. **Routing & Giao diện:** Mọi thay đổi URL hoặc thêm màn hình mới phải dựa trên và cập nhật đồng bộ vào `SCREEN.md`. Tuyệt đối không tự ý đẻ thêm Route ngoài luồng chuẩn.
-2. **TypeScript & Build Check:** Cấu hình `tsconfig.app.json` cực kỳ khắt khe (strict). Trước khi hoàn thành một logic trên Frontend, hãy chạy `npm run build` hoặc `npx tsc -b` trong thư mục `FE` để đảm bảo không để lại bất kỳ lỗi biên dịch nào.
-3. **Mật khẩu Database:** Khi tạo mới User trực tiếp vào SQL bằng Script, KHÔNG insert mật khẩu dạng plaintext. Luôn băm mật khẩu bằng logic băm SHA-256 được mô tả trong `BE/auth.py`.
-4. **Data Sync (Tính nhất quán dữ liệu):** Bất kỳ API nào thay đổi cấu trúc Bài thi hoặc Bài làm, bạn đều phải đảm bảo tính toán đồng thời trên cả Mongo và SQL. Lỗi dữ liệu bất đồng bộ là lỗi nguy hiểm nhất của kiến trúc này.
+*   **Admin:** `admin@elearning.com` (Manages users across the entire system)
+*   **Teacher:** `teacher@elearning.com` (Creates groups, exams, grades essay questions, views Analytics)
+*   **Student 1:** `student1@elearning.com` (Receives group invitations, takes exams, views grades)
+*   **Student 2:** `student2@elearning.com` (A secondary student account for testing)

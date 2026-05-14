@@ -41,6 +41,7 @@ const GroupManagement = () => {
       await createGroup({ groupName, studentEmails });
       fetchGroups();
     } catch (err) {
+      console.error(err);
       alert('Failed to create group!');
     }
   };

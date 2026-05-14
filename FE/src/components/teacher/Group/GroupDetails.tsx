@@ -17,14 +17,16 @@ export interface GroupStudent {
   gradeColorText: string;
 }
 
-export interface GroupStudent {
-  id: string;
-  stt: string;
-  name: string;
-  email: string;
-  averageGrade: string;
-  gradeColorBg: string;
-  gradeColorText: string;
+interface ApiGroupDetailResponse {
+  data: {
+    groupName?: string;
+    students?: {
+      studentId: string;
+      fullName: string;
+      email: string;
+      averageGrade: number;
+    }[];
+  };
 }
 
 interface GroupStats {
@@ -56,7 +58,7 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({ onBack, groupTitle, student
   useEffect(() => {
     if (groupId && !students) {
       getGroupDetail(groupId)
-        .then((res: any) => {
+        .then((res: ApiGroupDetailResponse) => {
           const data = res.data;
           setGroupName(data.groupName || 'Group Details');
           const mapped: GroupStudent[] = (data.students || []).map((s: { studentId: string; fullName: string; email: string; averageGrade: number }, idx: number) => {
@@ -95,7 +97,7 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({ onBack, groupTitle, student
       if (groupId) {
         await inviteStudents(groupId, studentEmails);
         // Reload sau khi invite thành công
-        const res: any = await getGroupDetail(groupId);
+        const res = await getGroupDetail(groupId) as ApiGroupDetailResponse;
         const data = res.data;
         const mapped: GroupStudent[] = (data.students || []).map((s: { studentId: string; fullName: string; email: string; averageGrade: number }, idx: number) => {
           const grade = s.averageGrade !== null && s.averageGrade !== undefined ? parseFloat(s.averageGrade.toString()) : 0;
@@ -132,6 +134,7 @@ const GroupDetails: React.FC<GroupDetailsProps> = ({ onBack, groupTitle, student
         setDisplayedStudents(prev => [...prev, ...newStudents]);
       }
     } catch (err) {
+      console.error(err);
       alert('Invite thất bại!');
     }
   };
